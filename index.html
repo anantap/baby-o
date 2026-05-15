@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pour-over Brouwtabel</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0e0e0e;
+    color: #c8c8c8;
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .wrap { width: 100%; max-width: 580px; }
+  .select-wrap { margin-bottom: 2rem; position: relative; display: inline-block; }
+  select {
+    appearance: none;
+    background: #0e0e0e;
+    border: 1px solid #2a2a2a;
+    color: #e0e0e0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    cursor: pointer;
+    outline: none;
+  }
+  select:hover { border-color: #444; }
+  .select-arrow {
+    pointer-events: none;
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #555;
+    font-size: 0.7rem;
+  }
+  .title {
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 1.5rem;
+  }
+  .sub-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #555;
+    margin-top: 1.8rem;
+    margin-bottom: 0.6rem;
+  }
+  .stats { display: flex; gap: 2rem; margin-bottom: 1.8rem; flex-wrap: wrap; }
+  .stat-item { display: flex; flex-direction: column; gap: 0.25rem; }
+  .stat-key { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: #555; }
+  .stat-val { font-size: 0.85rem; color: #e0e0e0; font-weight: 500; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  th {
+    text-align: left;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #777;
+    padding: 0 0 0.6rem 0;
+    font-weight: 400;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  th:not(:first-child) { padding-left: 1.5rem; }
+  td { padding: 0.75rem 0; border-bottom: 1px solid #1e1e1e; color: #bbb; font-weight: 300; }
+  td:not(:first-child) { padding-left: 1.5rem; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { color: #eee; }
+  .time { color: #e0e0e0; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .vol { color: #e0e0e0; }
+  .note { color: #666; }
+  .footer { margin-top: 2rem; font-size: 0.6rem; letter-spacing: 0.1em; color: #555; text-transform: uppercase; line-height: 1.8; }
+  .footer span { color: #999; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="select-wrap">
+    <select id="recipe-select" onchange="setRecipe(this.value)">
+      <option value="allround">Allround</option>
+      <option value="zarza">Zarza</option>
+      <option value="matteo">Matteo</option>
+      <option value="lightroast">Light Roast</option>
+      <option value="zen">Zen</option>
+    </select>
+    <span class="select-arrow">&#9660;</span>
+  </div>
+  <div class="title" id="title"></div>
+  <div class="stats" id="stats"></div>
+  <div class="sub-label">Stappenplan</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Tijd</th>
+        <th>Stap</th>
+        <th>Tot</th>
+        <th>Notitie</th>
+      </tr>
+    </thead>
+    <tbody id="steps"></tbody>
+  </table>
+  <div class="footer" id="footer"></div>
+</div>
+<script>
+var recipes = {
+  allround: {
+    name: 'Allround',
+    koffie: '18 g',
+    water: '300 ml',
+    temp: '94°C',
+    stand: '6–7',
+    steps: [
+      ['0:00', 'Bloom',        '60 ml',  'Rondje gieten, 40 sec wachten'],
+      ['0:40', 'Pour 2',       '130 ml', 'Rondje gieten'],
+      ['1:20', 'Pour 3',       '210 ml', 'Rondje gieten'],
+      ['2:00', 'Pour 4',       '300 ml', 'Rondje gieten'],
+      ['2:30–3:30', 'Klaar', '—', 'Laat volledig draineren']
+    ],
+    footer: 'Zuur → <span>grover</span> &nbsp;·&nbsp; Bitter → <span>fijner</span><br>Giet wanneer waterpeil het koffiebed bereikt'
+  },
+  zarza: {
+    name: 'Zarza',
+    koffie: '12 g',
+    water: '200 ml',
+    temp: '90–92°C',
+    stand: '6–7',
+    steps: [
+      ['0:00', 'Bloom',        '40 ml',  'Rondje gieten, 40 sec wachten'],
+      ['0:40', 'Pour 2',       '90 ml',  'Rondje gieten'],
+      ['1:20', 'Pour 3',       '150 ml', 'Rondje gieten'],
+      ['2:00', 'Pour 4',       '200 ml', 'Rondje gieten'],
+      ['2:30–3:00', 'Klaar', '—', 'Laat volledig draineren']
+    ],
+    footer: 'Lagere temp → <span>meer fruitigheid</span><br>Giet wanneer waterpeil het koffiebed bereikt &nbsp;·&nbsp; Giet rustig'
+  },
+  matteo: {
+    name: 'Matteo',
+    koffie: '15 g',
+    water: '250 ml',
+    temp: '94°C',
+    stand: '6–7',
+    steps: [
+      ['0:00', 'Bloom',        '50 ml',  'Rondje gieten, 40 sec wachten'],
+      ['0:40', 'Pour 2',       '90 ml',  'Rondje gieten'],
+      ['1:20', 'Pour 3',       '130 ml', 'Rondje gieten'],
+      ['2:00', 'Pour 4',       '170 ml', 'Rondje gieten'],
+      ['2:40', 'Pour 5',       '210 ml', 'Rondje gieten'],
+      ['3:20', 'Pour 6',       '250 ml', 'Rondje gieten'],
+      ['~4:00', 'Klaar',       '—', 'Laat volledig draineren']
+    ],
+    footer: 'Zoetheid staat centraal · 40 sec tussen elke pour<br>Giet wanneer waterpeil het koffiebed bereikt'
+  },
+  lightroast: {
+    name: 'Light Roast',
+    koffie: '18 g',
+    water: '300 ml',
+    temp: '90°C',
+    stand: '5–6',
+    steps: [
+      ['0:00', 'Bloom',        '60 ml',  'Rondje gieten, 45 sec wachten'],
+      ['0:45', 'Pour 2',       '130 ml', 'Rondje gieten'],
+      ['1:25', 'Pour 3',       '210 ml', 'Rondje gieten'],
+      ['2:05', 'Pour 4',       '300 ml', 'Rondje gieten'],
+      ['2:30–3:30', 'Klaar', '—', 'Laat volledig draineren']
+    ],
+    footer: 'Lagere temp → <span>meer fruitigheid</span> · Fijnere maling<br>Giet wanneer waterpeil het koffiebed bereikt'
+  },
+  zen: {
+    name: 'Zen',
+    koffie: '15 g',
+    water: '240 ml',
+    temp: '94°C',
+    stand: '6–7',
+    steps: [
+      ['0:00', 'Bloom',        '50 ml',  'Rondje gieten, 50 sec wachten'],
+      ['0:50', 'Pour 2',       '120 ml', 'Rondje gieten'],
+      ['1:30', 'Pour 3',       '180 ml', 'Rustig gieten'],
+      ['2:00', 'Pour 4',       '240 ml', 'Rustig gieten'],
+      ['3:00–3:15', 'Klaar', '—', 'Laat volledig draineren']
+    ],
+    footer: 'Zuur → <span>grover</span> &nbsp;·&nbsp; Bitter → <span>fijner</span><br>Giet wanneer waterpeil het koffiebed bereikt'
+  }
+};
+
+function setRecipe(name) {
+var r = recipes[name];
+if (!r) return;
+document.getElementById('title').textContent = 'Orea O1 · Hario Mini Slim · ' + r.name + ' · Kalita Wave 155';
+var statsHTML = '';
+var statsData = [
+{ key: 'Koffie', val: r.koffie },
+{ key: 'Water',  val: r.water  },
+{ key: 'Temp',   val: r.temp   },
+{ key: 'Stand',  val: r.stand  }
+];
+for (var i = 0; i < statsData.length; i++) {
+statsHTML += '<div class="stat-item"><span class="stat-key">' + statsData[i].key + '</span><span class="stat-val">' + statsData[i].val + '</span></div>';
+}
+document.getElementById('stats').innerHTML = statsHTML;
+var stepsHTML = '';
+for (var j = 0; j < r.steps.length; j++) {
+var st = r.steps[j];
+stepsHTML += '<tr><td class="time">' + st[0] + '</td><td>' + st[1] + '</td><td class="vol">' + st[2] + '</td><td class="note">' + st[3] + '</td></tr>';
+}
+document.getElementById('steps').innerHTML = stepsHTML;
+document.getElementById('footer').innerHTML = r.footer;
+}
+
+setRecipe('allround');
+</script>
+
+</body>
+</html>
