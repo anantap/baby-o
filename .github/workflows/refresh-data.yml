@@ -1,0 +1,53 @@
+# Periodieke data-refresh: haalt de echte affiliate-feeds op, regenereert
+# src/data/products.json + meta.json, en commit het resultaat. Cloudflare
+# Pages deployt automatisch zodra er een nieuwe commit op de main-branch staat
+# (Pages Git-integratie luistert naar pushes, geen extra config nodig).
+#
+# Let op: als je de Bol FTP-feed gebruikt in plaats van de API, vereist Bol
+# doorgaans een whitelisted vast IP. GitHub Actions-runners hebben een
+# wisselend IP, dus FTP werkt dan NIET vanuit deze workflow — gebruik in dat
+# geval de lokale systemd-timer-variant (zie deploy/systemd/) op een machine
+# met een vast IP. De Bol Marketing API (OAuth client-credentials) heeft dit
+# probleem niet en werkt prima vanuit Actions.
+name: Refresh productdata
+
+on:
+  schedule:
+    # Elke dag om 04:00 UTC (06:00 CET/05:00 CEST).
+    - cron: '0 4 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build productdata
+        env:
+          BOL_CLIENT_ID: ${{ secrets.BOL_CLIENT_ID }}
+          BOL_CLIENT_SECRET: ${{ secrets.BOL_CLIENT_SECRET }}
+          BOL_SITE_ID: ${{ secrets.BOL_SITE_ID }}
+          FEED_KRUIDVAT_URL: ${{ secrets.FEED_KRUIDVAT_URL }}
+          FEED_KRUIDVAT_SUBID: ${{ secrets.FEED_KRUIDVAT_SUBID }}
+        run: npm run build:data
+
+      - name: Commit data als die gewijzigd is
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/data/products.json src/data/meta.json
+          git diff --cached --quiet && echo "Geen wijzigingen, niets te committen" && exit 0
+          git commit -m "chore: automatische productdata-refresh"
+          git push

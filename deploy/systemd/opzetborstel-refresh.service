@@ -1,0 +1,23 @@
+# Eenmalig "draai de refresh" unit. Bedoeld voor gebruik samen met
+# opzetborstel-refresh.timer op een machine met een vast IP (bv. thuis-PC-Stick),
+# nodig als je de Bol FTP-feed gebruikt (die vereist IP-whitelisting).
+#
+# Installatie:
+#   sudo cp opzetborstel-refresh.service opzetborstel-refresh.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now opzetborstel-refresh.timer
+#
+# Pas WorkingDirectory en User aan naar jouw situatie. .env in de
+# WorkingDirectory wordt door npm run build:data automatisch gelezen
+# (via process.env, mits je dotenv of `node --env-file=.env` gebruikt —
+# zie README voor de exacte aanroep).
+[Unit]
+Description=Opzetborstel-vergelijker: productdata verversen en pushen
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=jouwgebruiker
+WorkingDirectory=/home/jouwgebruiker/baby-o
+ExecStart=/usr/bin/env bash -lc 'node --env-file=.env node_modules/.bin/tsx scripts/build-data.ts && git add src/data/products.json src/data/meta.json && (git diff --cached --quiet || git commit -m "chore: automatische productdata-refresh") && git push'

@@ -1,0 +1,13 @@
+# Draait opzetborstel-refresh.service elke dag om 04:00 lokale tijd, met een
+# willekeurige vertraging tot 10 minuten om te voorkomen dat alle home-servers
+# wereldwijd op exact hetzelfde moment de feed-server belasten.
+[Unit]
+Description=Dagelijkse refresh van opzetborstel-productdata
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target
