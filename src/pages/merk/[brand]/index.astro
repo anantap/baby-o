@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ProductTable from '../../../components/ProductTable.astro';
+import products from '../../../data/products.json';
+import type { Product } from '../../../lib/types';
+import { slugify } from '../../../lib/parse';
+
+export function getStaticPaths() {
+  const allProducts = products as Product[];
+  const brands = [...new Set(allProducts.map((p) => p.brand))];
+  return brands.map((brand) => ({
+    params: { brand: slugify(brand) },
+    props: { brand },
+  }));
+}
+
+const { brand } = Astro.props as { brand: string };
+const allProducts = products as Product[];
+const filtered = allProducts.filter((p) => p.brand === brand);
+---
+
+<BaseLayout title={`Opzetborstels ${brand}`}>
+  <p><a href="/">&larr; Alle opzetborstels</a></p>
+  <h2>Opzetborstels van {brand}</h2>
+  <ProductTable products={filtered} />
+</BaseLayout>

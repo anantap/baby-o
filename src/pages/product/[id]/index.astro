@@ -1,0 +1,79 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import products from '../../../data/products.json';
+import type { Product } from '../../../lib/types';
+import { groupProducts } from '../../../lib/parse';
+
+export function getStaticPaths() {
+  const allProducts = products as Product[];
+  const groups = groupProducts(allProducts);
+  return groups.map((group) => ({
+    params: { id: group.id },
+    props: { group },
+  }));
+}
+
+const { group } = Astro.props as { group: ReturnType<typeof groupProducts>[number] };
+const sortedListings = [...group.listings].sort((a, b) => {
+  if (a.pricePerHead === null) return 1;
+  if (b.pricePerHead === null) return -1;
+  return a.pricePerHead - b.pricePerHead;
+});
+---
+
+<BaseLayout title={group.title}>
+  <p><a href="/">&larr; Alle opzetborstels</a></p>
+  <h2>{group.title}</h2>
+  <p>
+    {group.brand} {!group.isOEM && <span class="badge compatible">compatible</span>}
+    {group.packSize ? <> &middot; {group.packSize} koppen per verpakking</> : null}
+  </p>
+
+  {
+    group.cheapest ? (
+      <p>
+        Goedkoopste: <strong>&euro;{group.cheapest.pricePerHead!.toFixed(2)} per kop</strong> bij{' '}
+        {group.cheapest.shop}.
+      </p>
+    ) : (
+      <p class="unknown-pack">
+        Voor geen van deze aanbiedingen kon het aantal opzetborstels met zekerheid worden
+        vastgesteld, dus is er geen prijs-per-kop-vergelijking beschikbaar.
+      </p>
+    )
+  }
+
+  <table>
+    <thead>
+      <tr>
+        <th>Winkel</th>
+        <th>Aantal</th>
+        <th>Prijs</th>
+        <th>Prijs per kop</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        sortedListings.map((listing: Product) => (
+          <tr class={group.cheapest?.id === listing.id ? 'cheapest-row' : ''}>
+            <td>
+              {listing.shop}
+              {group.cheapest?.id === listing.id && <span class="badge cheapest">goedkoopst</span>}
+            </td>
+            <td>{listing.packSize ?? <span class="unknown-pack">onbekend</span>}</td>
+            <td>&euro;{listing.price.toFixed(2)}</td>
+            <td class="price-per-head">
+              {listing.pricePerHead !== null ? `€${listing.pricePerHead.toFixed(2)}` : '—'}
+            </td>
+            <td>
+              <a class="button" href={listing.url} rel="nofollow sponsored noopener" target="_blank">
+                Bekijk bij winkel
+              </a>
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</BaseLayout>

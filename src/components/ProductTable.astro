@@ -1,0 +1,51 @@
+---
+import type { Product } from '../lib/types';
+import { slugify } from '../lib/parse';
+
+interface Props {
+  products: Product[];
+}
+
+const { products } = Astro.props;
+const ranked = products
+  .filter((p) => p.pricePerHead !== null)
+  .sort((a, b) => a.pricePerHead! - b.pricePerHead!);
+const unranked = products.filter((p) => p.pricePerHead === null);
+---
+
+<table>
+  <thead>
+    <tr>
+      <th>Merk</th>
+      <th>Titel</th>
+      <th>Aantal</th>
+      <th>Prijs</th>
+      <th>Prijs per kop</th>
+      <th>Winkel</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      ranked.map((p) => (
+        <tr>
+          <td>{p.brand} {!p.isOEM && <span class="badge compatible">compatible</span>}</td>
+          <td><a href={`/product/${slugify(p.matchKey)}/`}>{p.title}</a></td>
+          <td>{p.packSize}</td>
+          <td>&euro;{p.price.toFixed(2)}</td>
+          <td class="price-per-head">&euro;{p.pricePerHead!.toFixed(2)}</td>
+          <td>{p.shop}</td>
+          <td><a class="button" href={p.url} rel="nofollow sponsored noopener" target="_blank">Bekijk bij winkel</a></td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>
+{
+  unranked.length > 0 && (
+    <p class="flagged-note">
+      {unranked.length} aanbieding(en) weggelaten uit de ranking omdat het aantal opzetborstels
+      niet met zekerheid uit de titel kon worden afgeleid.
+    </p>
+  )
+}

@@ -1,0 +1,42 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — Opzetborstel Vergelijker</title>
+    <meta
+      name="description"
+      content="Vergelijk opzetborstels voor elektrische tandenborstels op prijs per kop."
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <a href="/"><h1>Opzetborstel Vergelijker</h1></a>
+      <nav class="site-nav">
+        <a href="/">Alle opzetborstels</a>
+        <a href="/merk/oral-b/">Oral-B</a>
+        <a href="/merk/philips-sonicare/">Philips Sonicare</a>
+        <a href="/merk/jordan/">Jordan</a>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <p>
+        Prijzen en voorraad kunnen afwijken van de winkel. Links zijn affiliate-links: als je
+        via deze site iets koopt, ontvangen wij mogelijk een kleine vergoeding zonder extra
+        kosten voor jou.
+      </p>
+    </footer>
+  </body>
+</html>

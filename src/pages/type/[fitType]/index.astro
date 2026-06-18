@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ProductTable from '../../../components/ProductTable.astro';
+import products from '../../../data/products.json';
+import type { Product } from '../../../lib/types';
+import { slugify } from '../../../lib/parse';
+
+export function getStaticPaths() {
+  const allProducts = products as Product[];
+  const fitTypes = [...new Set(allProducts.map((p) => p.fitType))];
+  return fitTypes.map((fitType) => ({
+    params: { fitType: slugify(fitType) },
+    props: { fitType },
+  }));
+}
+
+const { fitType } = Astro.props as { fitType: string };
+const allProducts = products as Product[];
+const filtered = allProducts.filter((p) => p.fitType === fitType);
+---
+
+<BaseLayout title={`Opzetborstels type ${fitType}`}>
+  <p><a href="/">&larr; Alle opzetborstels</a></p>
+  <h2>Opzetborstels type {fitType}</h2>
+  <ProductTable products={filtered} />
+</BaseLayout>
