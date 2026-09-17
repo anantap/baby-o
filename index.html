@@ -309,9 +309,12 @@ function formatTemp(str) {
 
 // --- Pour-over drip animation ---
 // Shared canvas covers the funnel, the gap below it, and the glass, so a
-// drip can travel visually from one into the other. Settled water behaves
-// like marbles poured into a jar: each drop falls straight down and comes
-// to rest on the floor or on top of whatever it lands on, never overlapping.
+// drip can travel visually from one into the other.
+//
+// The filter shows a solid pool that shrinks as it drains: each pour fills
+// it, then it empties over the step's duration as drips leave from the
+// bottom. The glass fills like actual water: each drop always seeks out
+// the lowest/emptiest spot, so the surface stays level instead of mounding.
 
 var COFFEE_H = 118;
 var GAP_H = 21;
@@ -322,16 +325,25 @@ var GLASS_TOP = COFFEE_H + GAP_H;
 var GLASS_FLOOR_Y = GLASS_TOP + GLASS_H;
 
 var DOT_RADIUS = 3.5;
-var MAX_HEIGHT_FRACTION = 0.70; // the pile never rises above 70% of the glass
+var MAX_HEIGHT_FRACTION = 0.70; // the water never rises above 70% of the glass
 var STEP_POUR_DELAY = 150;
 var FALL_SPEED = 0.6; // px/ms
 var MIN_FALL_DURATION = 90;
+var LEVEL_COLUMNS = 24;
+var LEVEL_POOL_SIZE = 6; // pick randomly among the N lowest columns
+
+var FILTER_TAPER_TOP_X = 27.4;   // x-inset of the taper at y=0 vs y=COFFEE_H
+var FILTER_LEVEL_TOP_Y = 15;     // filter pool surface when freshly poured (full)
+var FILTER_LEVEL_BOTTOM_Y = COFFEE_H; // fully drained (no visible pool)
 
 var waterCanvas = document.getElementById('water-fill');
 var waterCtx = waterCanvas.getContext('2d');
 
-// Where a marble dropped straight down at x would come to rest against
-// the floor or against already-settled marbles.
+var MIN_X = GLASS_LEFT + DOT_RADIUS;
+var MAX_X = GLASS_LEFT + GLASS_W - DOT_RADIUS;
+
+// Where a drop dropped straight down at x would come to rest against the
+// floor or against already-settled water.
 function settleY(x, marbles) {
   var minSpacing = DOT_RADIUS * 2;
   var restY = GLASS_FLOOR_Y - DOT_RADIUS;
@@ -345,45 +357,34 @@ function settleY(x, marbles) {
   return restY;
 }
 
-var MIN_X = GLASS_LEFT + DOT_RADIUS;
-var MAX_X = GLASS_LEFT + GLASS_W - DOT_RADIUS;
-
-// A marble landing off-balance on a peak would roll sideways into the
-// nearest valley rather than balancing exactly where it fell. Approximate
-// that by hill-climbing horizontally toward whichever direction settles
-// lower, refining the step each time nothing improves.
-function settleWithRoll(dropX, marbles) {
-  var x = dropX;
-  var y = settleY(x, marbles);
-  var step = DOT_RADIUS;
-  for (var iter = 0; iter < 24 && step > 0.15; iter++) {
-    var xLeft = Math.max(MIN_X, x - step);
-    var xRight = Math.min(MAX_X, x + step);
-    var yLeft = settleY(xLeft, marbles);
-    var yRight = settleY(xRight, marbles);
-    if (yLeft > y && yLeft >= yRight) {
-      x = xLeft; y = yLeft;
-    } else if (yRight > y) {
-      x = xRight; y = yRight;
-    } else {
-      step *= 0.6;
-    }
+// Water finds its own level: sample columns across the width and drop
+// into one of the emptiest ones, so the surface stays roughly flat instead
+// of piling up unevenly like solid marbles would.
+function pickLevelDropX(marbles) {
+  var candidates = [];
+  for (var i = 0; i < LEVEL_COLUMNS; i++) {
+    var x = MIN_X + ((i + 0.5) / LEVEL_COLUMNS) * (MAX_X - MIN_X);
+    candidates.push({ x: x, y: settleY(x, marbles) });
   }
-  return { x: x, y: y };
+  candidates.sort(function (a, b) { return b.y - a.y; }); // emptiest (largest y) first
+  var pick = candidates[Math.floor(Math.random() * Math.min(LEVEL_POOL_SIZE, candidates.length))];
+  var jitter = ((MAX_X - MIN_X) / LEVEL_COLUMNS) * 0.4;
+  var x = pick.x + (Math.random() * 2 - 1) * jitter;
+  return Math.max(MIN_X, Math.min(MAX_X, x));
 }
 
-// Precompute (once) a natural-looking pile that reaches MAX_HEIGHT_FRACTION,
-// used both as the total marble budget for a full brew and as the resting
+// Precompute (once) a level resting pool that reaches MAX_HEIGHT_FRACTION,
+// used both as the total drop budget for a full brew and as the resting
 // (before-start / after-done) view.
 function buildRestingPile() {
   var marbles = [];
   var targetY = GLASS_TOP + GLASS_H * (1 - MAX_HEIGHT_FRACTION);
   var safetyCap = 4000;
   while (marbles.length < safetyCap) {
-    var dropX = GLASS_LEFT + DOT_RADIUS + Math.random() * (GLASS_W - DOT_RADIUS * 2);
-    var settled = settleWithRoll(dropX, marbles);
-    marbles.push(settled);
-    if (settled.y <= targetY) break;
+    var x = pickLevelDropX(marbles);
+    var y = settleY(x, marbles);
+    marbles.push({ x: x, y: y });
+    if (y <= targetY) break;
   }
   return marbles;
 }
@@ -391,74 +392,73 @@ function buildRestingPile() {
 var restingPile = buildRestingPile();
 var DOT_COUNT = restingPile.length;
 
-var filterQueue = [];    // dots poured into the filter, waiting to drip
-var activeDrips = [];    // dots currently falling straight down
-var settledMarbles = []; // dots at rest in the glass
+var filterRemaining = 0; // drops still sitting in the filter, waiting to drip
+var filterStepTotal = 0; // how many the current step started with
+var activeDrips = [];    // drops currently falling straight down
+var settledMarbles = []; // drops at rest in the glass
 var lastStepIdx = -1;
 var nextDripTime = 0;
 var currentDripInterval = 300;
 
-function filterOverlaps(x, y) {
-  var minSpacing = DOT_RADIUS * 1.9;
-  for (var i = 0; i < filterQueue.length; i++) {
-    var dx = x - filterQueue[i].x;
-    var dy = y - filterQueue[i].y;
-    if (dx * dx + dy * dy < minSpacing * minSpacing) return true;
-  }
-  return false;
-}
-
-function randomFunnelPoint() {
-  var y = 15 + Math.random() * 90;
-  var leftX = 27.4 * (y / COFFEE_H) + DOT_RADIUS;
-  var rightX = 160 - 27.4 * (y / COFFEE_H) - DOT_RADIUS;
-  var x = leftX + Math.random() * (rightX - leftX);
-  for (var tries = 0; tries < 20 && filterOverlaps(x, y); tries++) {
-    x = leftX + Math.random() * (rightX - leftX);
-  }
-  return { x: x, y: y };
-}
-
-// Resting look (before starting / after done): a static, settled pile.
+// Resting look (before starting / after done): a static, settled pool.
 function setRestingFill() {
-  filterQueue = [];
+  filterRemaining = 0;
+  filterStepTotal = 0;
   activeDrips = [];
   settledMarbles = restingPile.slice();
 }
 
-// Called once per new step (bloom, pour 2, ...) to pour that step's water
-// into the filter, to be dripped out gradually over the step's duration.
+// Called once per new step (bloom, pour 2, ...): that step's water fills
+// the filter, to be dripped out gradually over the step's duration.
 function onStepStart(prevMl, curMl, totalMl, stepStartSec, stepEndSec) {
   var addedMl = curMl - prevMl;
   if (addedMl <= 0 || totalMl <= 0) return;
   var dotsForStep = Math.max(1, Math.round(DOT_COUNT * (addedMl / totalMl)));
-  for (var i = 0; i < dotsForStep; i++) filterQueue.push(randomFunnelPoint());
+  filterRemaining += dotsForStep;
+  filterStepTotal = filterRemaining;
   var stepDurationMs = Math.max(200, (stepEndSec - stepStartSec) * 1000);
   currentDripInterval = stepDurationMs / dotsForStep;
   nextDripTime = performance.now() + STEP_POUR_DELAY;
 }
 
 function resetBrewAnimation() {
-  filterQueue = [];
+  filterRemaining = 0;
+  filterStepTotal = 0;
   activeDrips = [];
   settledMarbles = [];
   lastStepIdx = -1;
 }
 
 function spawnDripFromFilter() {
-  var fdot = filterQueue.shift();
-  if (!fdot) return;
-  var dropX = GLASS_LEFT + DOT_RADIUS + Math.random() * (GLASS_W - DOT_RADIUS * 2);
-  var settled = settleWithRoll(dropX, settledMarbles);
-  var startY = 108;
-  var duration = Math.max(MIN_FALL_DURATION, (settled.y - startY) / FALL_SPEED);
-  activeDrips.push({ x: settled.x, startY: startY, restY: settled.y, startTime: performance.now(), duration: duration });
+  filterRemaining--;
+  var dropX = pickLevelDropX(settledMarbles);
+  var restY = settleY(dropX, settledMarbles);
+  var startY = FILTER_LEVEL_BOTTOM_Y - 10;
+  var duration = Math.max(MIN_FALL_DURATION, (restY - startY) / FALL_SPEED);
+  activeDrips.push({ x: dropX, startY: startY, restY: restY, startTime: performance.now(), duration: duration });
+}
+
+// The filter shown as a solid pool (not individual drops) that shrinks
+// as it drains, clipped to the funnel's taper.
+function drawFilterPool() {
+  if (filterStepTotal <= 0 || filterRemaining <= 0) return;
+  var frac = Math.max(0, Math.min(1, filterRemaining / filterStepTotal));
+  var levelY = FILTER_LEVEL_BOTTOM_Y - frac * (FILTER_LEVEL_BOTTOM_Y - FILTER_LEVEL_TOP_Y);
+  var leftAt = function (y) { return FILTER_TAPER_TOP_X * (y / COFFEE_H); };
+  var rightAt = function (y) { return 160 - FILTER_TAPER_TOP_X * (y / COFFEE_H); };
+  waterCtx.beginPath();
+  waterCtx.moveTo(leftAt(levelY), levelY);
+  waterCtx.lineTo(rightAt(levelY), levelY);
+  waterCtx.lineTo(rightAt(COFFEE_H), COFFEE_H);
+  waterCtx.lineTo(leftAt(COFFEE_H), COFFEE_H);
+  waterCtx.closePath();
+  waterCtx.fill();
 }
 
 function drawWater() {
   var now = performance.now();
 
-  if (filterQueue.length > 0 && now >= nextDripTime) {
+  if (filterRemaining > 0 && now >= nextDripTime) {
     spawnDripFromFilter();
     nextDripTime = now + currentDripInterval;
   }
@@ -471,17 +471,12 @@ function drawWater() {
   waterCtx.clearRect(0, 0, waterCanvas.width, waterCanvas.height);
   waterCtx.fillStyle = 'rgba(141, 141, 141, 0.55)';
 
+  drawFilterPool();
+
   for (var i = 0; i < settledMarbles.length; i++) {
     var m = settledMarbles[i];
     waterCtx.beginPath();
     waterCtx.arc(m.x, m.y, DOT_RADIUS, 0, Math.PI * 2);
-    waterCtx.fill();
-  }
-
-  for (var f = 0; f < filterQueue.length; f++) {
-    var fdot = filterQueue[f];
-    waterCtx.beginPath();
-    waterCtx.arc(fdot.x, fdot.y, DOT_RADIUS, 0, Math.PI * 2);
     waterCtx.fill();
   }
 
