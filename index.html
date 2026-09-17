@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0e0e0e">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: #0e0e0e;
@@ -21,113 +21,147 @@
     justify-content: center;
     padding: 2rem;
   }
-  .wrap { width: 100%; max-width: 580px; }
-  .select-wrap { margin-bottom: 2rem; position: relative; display: inline-block; }
-  select {
+  .wrap { width: 100%; max-width: 420px; }
+
+  .pill {
+    display: block;
+    width: 100%;
     appearance: none;
     background: #0e0e0e;
     border: 1px solid #2a2a2a;
+    border-radius: 14px;
     color: #e0e0e0;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.75rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    font-size: 1rem;
+    padding: 1rem 2.5rem 1rem 1.25rem;
     cursor: pointer;
     outline: none;
   }
-  select:hover { border-color: #444; }
+  .pill:hover { border-color: #444; }
+  .pill:disabled { opacity: 0.6; cursor: default; }
+  .select-wrap { position: relative; margin-bottom: 2rem; }
   .select-arrow {
     pointer-events: none;
     position: absolute;
-    right: 0.75rem;
+    right: 1.1rem;
     top: 50%;
     transform: translateY(-50%);
     color: #555;
     font-size: 0.7rem;
   }
-  .title {
-    font-size: 0.65rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: #888;
-    margin-bottom: 1.5rem;
+
+  .divider-row { display: flex; align-items: stretch; margin-bottom: 2rem; }
+  .v-div { width: 1px; background: #2a2a2a; margin: 0 1rem; }
+
+  .stat-cell {
+    flex: 1;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #e0e0e0;
   }
-  .sub-label {
-    font-size: 0.6rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: #555;
-    margin-top: 1.8rem;
-    margin-bottom: 0.6rem;
+
+  .nn-cell { flex: 1; text-align: center; }
+  .nn-label { font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; color: #555; margin-bottom: 0.5rem; }
+  .nn-value { font-size: 0.95rem; font-weight: 600; color: #e0e0e0; font-variant-numeric: tabular-nums; }
+  .nn-time { font-size: 0.75rem; color: #666; margin-top: 0.3rem; font-variant-numeric: tabular-nums; }
+  .nn-done-text { color: #4dd68c; font-weight: 700; }
+
+  .vessels { display: flex; flex-direction: column; align-items: center; gap: 1.75rem; margin-bottom: 2rem; }
+
+  .vessel-coffee { position: relative; width: 200px; height: 150px; }
+  .vessel-coffee svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .vessel-label {
+    position: absolute;
+    top: 58%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
   }
-  .stats { display: flex; gap: 2rem; margin-bottom: 1.8rem; flex-wrap: wrap; }
-  .stat-item { display: flex; flex-direction: column; gap: 0.25rem; }
-  .stat-key { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: #555; }
-  .stat-val { font-size: 0.85rem; color: #e0e0e0; font-weight: 500; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-  th {
-    text-align: left;
-    font-size: 0.6rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: #777;
-    padding: 0 0 0.6rem 0;
-    font-weight: 400;
-    border-bottom: 1px solid #2a2a2a;
+  .vessel-label-key { display: block; font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; color: #555; margin-bottom: 0.35rem; }
+  .vessel-label-val { display: block; font-size: 0.95rem; font-weight: 500; color: #e0e0e0; }
+
+  .vessel-water {
+    position: relative;
+    width: 200px;
+    height: 230px;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  th:not(:first-child) { padding-left: 1.5rem; }
-  td { padding: 0.75rem 0; border-bottom: 1px solid #1e1e1e; color: #bbb; font-weight: 300; }
-  td:not(:first-child) { padding-left: 1.5rem; }
-  tbody tr:last-child td { border-bottom: none; }
-  tbody tr:hover td { color: #eee; }
-  .time { color: #e0e0e0; font-weight: 500; font-variant-numeric: tabular-nums; }
-  .vol { color: #e0e0e0; }
-  .note { color: #666; }
-  .footer { margin-top: 2rem; font-size: 0.6rem; letter-spacing: 0.1em; color: #555; text-transform: uppercase; line-height: 1.8; }
-  .footer span { color: #999; }
-  .btn {
+  .vessel-water-fill {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 22%;
+    height: 1px;
+    background: #444;
+    transition: bottom 0.5s ease;
+  }
+  .vessel-water-fill.full { bottom: calc(100% - 1px); background: #4dd68c; }
+
+  .btn-start {
     appearance: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    width: 100%;
     background: #0e0e0e;
     border: 1px solid #2a2a2a;
+    border-radius: 14px;
     color: #e0e0e0;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.75rem;
+    font-size: 1.4rem;
+    font-weight: 700;
     letter-spacing: 0.12em;
-    text-transform: uppercase;
-    padding: 0.6rem 1.2rem;
+    padding: 1.1rem;
     cursor: pointer;
   }
-  .btn:hover { border-color: #444; }
-  .start-row { margin-bottom: 1.8rem; }
-  .timer-view { display: none; }
-  .timer-clock {
-    font-size: 3.5rem;
-    font-weight: 500;
+  .btn-start:hover { border-color: #444; }
+  .btn-start .arrow { font-size: 1rem; color: #999; }
+
+  .timer-bar {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #2a2a2a;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .clock-cell {
+    flex: 1;
+    padding: 1.5rem 0.5rem;
+    text-align: center;
+    font-size: 2.75rem;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     color: #e0e0e0;
-    margin-bottom: 0.5rem;
     transition: color 0.15s;
   }
-  .timer-clock.red { color: #ff4d4d; }
-  .timer-view.done .timer-clock { color: #4dd68c; }
-  .timer-view.done .timer-step { color: #4dd68c; }
-  .timer-step {
-    font-size: 0.9rem;
-    letter-spacing: 0.1em;
+  .clock-cell.red { color: #ff4d4d; }
+  .clock-cell.done { color: #4dd68c; }
+  .timer-bar .v-div { margin: 0; }
+  .status-cell {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: #999;
-    margin-bottom: 1.8rem;
+    color: #888;
+    cursor: pointer;
   }
-  .timer-volumes { display: flex; gap: 2rem; margin-bottom: 1.5rem; }
-  .timer-volumes .stat-val.red { color: #ff4d4d; }
-  .timer-note { font-size: 0.8rem; color: #888; margin-bottom: 2rem; min-height: 1.2em; }
+  .status-cell.done { color: #4dd68c; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="select-wrap">
-    <select id="recipe-select" onchange="setRecipe(this.value)">
+    <select class="pill" id="recipe-select" onchange="setRecipe(this.value)">
       <option value="allround">Allround</option>
       <option value="zarza">Zarza</option>
       <option value="matteo">Matteo</option>
@@ -136,38 +170,40 @@
     </select>
     <span class="select-arrow">&#9660;</span>
   </div>
-  <div class="title" id="title"></div>
-  <div class="stats" id="stats"></div>
 
-  <div class="start-row" id="start-row">
-    <button class="btn" id="start-btn" onclick="startTimer()">&#9654; Start</button>
-  </div>
+  <div class="divider-row" id="stat-row"></div>
+  <div class="divider-row" id="now-next-row" style="display:none"></div>
 
-  <div id="recipe-view">
-    <div class="sub-label">Stappenplan</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Tijd</th>
-          <th>Stap</th>
-          <th>Tot</th>
-          <th>Notitie</th>
-        </tr>
-      </thead>
-      <tbody id="steps"></tbody>
-    </table>
-    <div class="footer" id="footer"></div>
-  </div>
-
-  <div class="timer-view" id="timer-view">
-    <div class="timer-clock" id="timer-clock">0:00</div>
-    <div class="timer-step" id="timer-step"></div>
-    <div class="timer-volumes">
-      <div class="stat-item"><span class="stat-key">Now</span><span class="stat-val" id="timer-now"></span></div>
-      <div class="stat-item"><span class="stat-key">Next</span><span class="stat-val" id="timer-next"></span></div>
+  <div class="vessels">
+    <div class="vessel-coffee">
+      <svg viewBox="0 0 200 150" preserveAspectRatio="none">
+        <path d="M34,8 L64,130" stroke="#555" stroke-width="1.5" fill="none"/>
+        <path d="M166,8 L136,130" stroke="#555" stroke-width="1.5" fill="none"/>
+        <path d="M64,130 L136,130" stroke="#555" stroke-width="1.5" fill="none"/>
+        <path d="M40.4,34 L159.6,34" stroke="#555" stroke-width="1.5" stroke-dasharray="4,4" fill="none"/>
+      </svg>
+      <div class="vessel-label">
+        <span class="vessel-label-key">Coffee</span>
+        <span class="vessel-label-val" id="coffee-val"></span>
+      </div>
     </div>
-    <div class="timer-note" id="timer-note"></div>
-    <button class="btn" id="stop-btn" onclick="stopTimer()">&#9632; Stop</button>
+    <div class="vessel-water">
+      <div class="vessel-water-fill" id="water-fill"></div>
+      <div class="vessel-label">
+        <span class="vessel-label-key">Water</span>
+        <span class="vessel-label-val" id="water-val"></span>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-start" id="start-btn" onclick="startTimer()">
+    <span>START</span><span class="arrow">&#9654;</span>
+  </button>
+
+  <div class="timer-bar" id="timer-bar" style="display:none">
+    <div class="clock-cell" id="timer-clock">0:00</div>
+    <div class="v-div"></div>
+    <div class="status-cell" id="timer-status" onclick="stopTimer()">Stop</div>
   </div>
 </div>
 <script>
@@ -178,6 +214,7 @@ var recipes = {
     water: '300 ml',
     temp: '94°C',
     stand: '6–7',
+    grind: 'Coarse',
     steps: [
       ['0:00', 'Bloom',        '60 ml',  'Rondje gieten, 40 sec wachten'],
       ['0:40', 'Pour 2',       '130 ml', 'Rondje gieten'],
@@ -193,6 +230,7 @@ var recipes = {
     water: '200 ml',
     temp: '90–92°C',
     stand: '6–7',
+    grind: 'Coarse',
     steps: [
       ['0:00', 'Bloom',        '40 ml',  'Rondje gieten, 40 sec wachten'],
       ['0:40', 'Pour 2',       '90 ml',  'Rondje gieten'],
@@ -208,6 +246,7 @@ var recipes = {
     water: '250 ml',
     temp: '94°C',
     stand: '6–7',
+    grind: 'Coarse',
     steps: [
       ['0:00', 'Bloom',        '50 ml',  'Rondje gieten, 40 sec wachten'],
       ['0:40', 'Pour 2',       '90 ml',  'Rondje gieten'],
@@ -225,6 +264,7 @@ var recipes = {
     water: '300 ml',
     temp: '90°C',
     stand: '5–6',
+    grind: 'Fine',
     steps: [
       ['0:00', 'Bloom',        '60 ml',  'Rondje gieten, 45 sec wachten'],
       ['0:45', 'Pour 2',       '130 ml', 'Rondje gieten'],
@@ -240,6 +280,7 @@ var recipes = {
     water: '240 ml',
     temp: '94°C',
     stand: '6–7',
+    grind: 'Coarse',
     steps: [
       ['0:00', 'Bloom',        '50 ml',  'Rondje gieten, 50 sec wachten'],
       ['0:50', 'Pour 2',       '120 ml', 'Rondje gieten'],
@@ -253,29 +294,37 @@ var recipes = {
 
 var currentRecipeName = 'allround';
 
+function parseMl(str) {
+  var n = parseInt(str, 10);
+  return isNaN(n) ? 0 : n;
+}
+
+function mlLabel(n) {
+  return n + ' ML';
+}
+
+function formatTemp(str) {
+  return str.replace('°C', ' °C');
+}
+
 function setRecipe(name) {
-var r = recipes[name];
-if (!r) return;
-currentRecipeName = name;
-document.getElementById('title').textContent = 'Orea O1 · Hario Mini Slim · ' + r.name + ' · Kalita Wave 155';
-var statsHTML = '';
-var statsData = [
-{ key: 'Koffie', val: r.koffie },
-{ key: 'Water',  val: r.water  },
-{ key: 'Temp',   val: r.temp   },
-{ key: 'Stand',  val: r.stand  }
-];
-for (var i = 0; i < statsData.length; i++) {
-statsHTML += '<div class="stat-item"><span class="stat-key">' + statsData[i].key + '</span><span class="stat-val">' + statsData[i].val + '</span></div>';
-}
-document.getElementById('stats').innerHTML = statsHTML;
-var stepsHTML = '';
-for (var j = 0; j < r.steps.length; j++) {
-var st = r.steps[j];
-stepsHTML += '<tr><td class="time">' + st[0] + '</td><td>' + st[1] + '</td><td class="vol">' + st[2] + '</td><td class="note">' + st[3] + '</td></tr>';
-}
-document.getElementById('steps').innerHTML = stepsHTML;
-document.getElementById('footer').innerHTML = r.footer;
+  var r = recipes[name];
+  if (!r) return;
+  currentRecipeName = name;
+
+  var pours = r.steps.length - 1;
+  var grindLabel = r.grind.toUpperCase() + ' GRIND';
+
+  document.getElementById('stat-row').innerHTML =
+    '<div class="stat-cell">' + formatTemp(r.temp) + '</div>' +
+    '<div class="v-div"></div>' +
+    '<div class="stat-cell">' + pours + ' POURS</div>' +
+    '<div class="v-div"></div>' +
+    '<div class="stat-cell">' + grindLabel + '</div>';
+
+  document.getElementById('coffee-val').textContent = r.koffie;
+  document.getElementById('water-val').textContent = mlLabel(parseMl(r.water));
+  document.getElementById('water-fill').classList.remove('full');
 }
 
 setRecipe('allround');
@@ -290,6 +339,7 @@ var wakeLock = null;
 var timerInterval = null;
 var timerStart = null;
 var timerEndSeconds = null;
+var klaarStartSeconds = null;
 var lastBeepSecond = null;
 var audioCtx = null;
 
@@ -306,9 +356,15 @@ function parseEndTime(str) {
   return parseInt(last[0], 10) * 60 + parseInt(last[1], 10);
 }
 
+function formatClock(sec) {
+  var mm = Math.floor(sec / 60);
+  var ss = sec % 60;
+  return mm + ':' + (ss < 10 ? '0' : '') + ss;
+}
+
 function getTimedSteps(r) {
   return r.steps.map(function (st) {
-    return { label: st[1], vol: st[2], note: st[3], seconds: parseTime(st[0]) };
+    return { label: st[1], ml: parseMl(st[2]), seconds: parseTime(st[0]) };
   });
 }
 
@@ -352,54 +408,70 @@ function beep() {
 function startTimer() {
   var r = recipes[currentRecipeName];
   var steps = getTimedSteps(r);
+  var pourSteps = steps.slice(0, steps.length - 1);
+  var totalMl = parseMl(r.water);
+  klaarStartSeconds = steps[steps.length - 1].seconds;
   timerEndSeconds = parseEndTime(r.steps[r.steps.length - 1][0]);
 
-  document.querySelector('.select-wrap').style.display = 'none';
-  document.getElementById('start-row').style.display = 'none';
-  document.getElementById('recipe-view').style.display = 'none';
-  document.getElementById('timer-view').style.display = 'block';
-  document.getElementById('timer-view').classList.remove('done');
+  document.getElementById('recipe-select').disabled = true;
+  document.getElementById('stat-row').style.display = 'none';
+  document.getElementById('now-next-row').style.display = 'flex';
+  document.getElementById('start-btn').style.display = 'none';
+  document.getElementById('timer-bar').style.display = 'flex';
+  document.getElementById('water-fill').classList.remove('full');
 
   requestWakeLock();
 
   lastBeepSecond = null;
   timerStart = Date.now();
-  renderTimer(steps, 0);
+  renderTimer(pourSteps, totalMl, 0);
   timerInterval = setInterval(function () {
     var elapsed = Math.floor((Date.now() - timerStart) / 1000);
-    renderTimer(steps, elapsed);
+    renderTimer(pourSteps, totalMl, elapsed);
   }, 200);
 }
 
-function renderTimer(steps, elapsed) {
+function renderTimer(pourSteps, totalMl, elapsed) {
   var finished = elapsed >= timerEndSeconds;
   var displayElapsed = finished ? timerEndSeconds : elapsed;
 
   var idx = 0;
-  for (var i = 0; i < steps.length; i++) {
-    if (steps[i].seconds <= displayElapsed) idx = i;
+  for (var i = 0; i < pourSteps.length; i++) {
+    if (pourSteps[i].seconds <= displayElapsed) idx = i;
   }
-  var cur = steps[idx];
-  var next = steps[idx + 1];
+  var cur = pourSteps[idx];
+  var next = pourSteps[idx + 1];
 
-  var mm = Math.floor(displayElapsed / 60);
-  var ss = displayElapsed % 60;
-  var remaining = next ? next.seconds - displayElapsed : null;
-  var isRed = remaining !== null && remaining >= 0 && remaining <= 5;
+  var prevMl = idx > 0 ? pourSteps[idx - 1].ml : 0;
+  var curMl = cur.ml;
+
+  var boundarySeconds = next ? next.seconds : klaarStartSeconds;
+  var remaining = boundarySeconds - displayElapsed;
+  var isRed = remaining >= 0 && remaining <= 5;
 
   var clockEl = document.getElementById('timer-clock');
-  clockEl.textContent = mm + ':' + (ss < 10 ? '0' : '') + ss;
+  clockEl.textContent = formatClock(displayElapsed);
   clockEl.classList.toggle('red', isRed);
 
-  document.getElementById('timer-step').textContent = finished ? 'Klaar' : cur.label;
-  document.getElementById('timer-note').textContent = finished ? 'Klaar om te drinken' : cur.note;
+  var nowRange = prevMl + ' ML → ' + curMl + ' ML';
+  var nowTime = formatClock(cur.seconds) + ' - ' + formatClock(boundarySeconds);
 
-  var nowEl = document.getElementById('timer-now');
-  var nextEl = document.getElementById('timer-next');
-  nowEl.textContent = cur.vol;
-  nextEl.textContent = next ? next.vol : '—';
-  nowEl.classList.toggle('red', isRed);
-  nextEl.classList.toggle('red', isRed);
+  var nextHTML;
+  if (next) {
+    var afterNext = pourSteps[idx + 2] ? pourSteps[idx + 2].seconds : klaarStartSeconds;
+    var nextRange = curMl + ' ML → ' + next.ml + ' ML';
+    var nextTime = formatClock(next.seconds) + ' - ' + formatClock(afterNext);
+    nextHTML = '<div class="nn-value">' + nextRange + '</div><div class="nn-time">' + nextTime + '</div>';
+  } else {
+    nextHTML = '<div class="nn-value nn-done-text">DONE!</div>';
+  }
+
+  document.getElementById('now-next-row').innerHTML =
+    '<div class="nn-cell"><div class="nn-label">Now</div><div class="nn-value">' + nowRange + '</div><div class="nn-time">' + nowTime + '</div></div>' +
+    '<div class="v-div"></div>' +
+    '<div class="nn-cell"><div class="nn-label">Next</div>' + nextHTML + '</div>';
+
+  document.getElementById('water-val').textContent = mlLabel(curMl);
 
   if (isRed && remaining !== lastBeepSecond) {
     lastBeepSecond = remaining;
@@ -412,7 +484,11 @@ function renderTimer(steps, elapsed) {
     clearInterval(timerInterval);
     timerInterval = null;
     releaseWakeLock();
-    document.getElementById('timer-view').classList.add('done');
+    clockEl.classList.remove('red');
+    clockEl.classList.add('done');
+    document.getElementById('timer-status').textContent = 'Done!';
+    document.getElementById('timer-status').classList.add('done');
+    document.getElementById('water-fill').classList.add('full');
   }
 }
 
@@ -420,12 +496,23 @@ function stopTimer() {
   clearInterval(timerInterval);
   timerInterval = null;
   timerEndSeconds = null;
+  klaarStartSeconds = null;
   releaseWakeLock();
-  document.querySelector('.select-wrap').style.display = '';
-  document.getElementById('start-row').style.display = '';
-  document.getElementById('recipe-view').style.display = '';
-  document.getElementById('timer-view').style.display = 'none';
-  document.getElementById('timer-view').classList.remove('done');
+
+  document.getElementById('recipe-select').disabled = false;
+  document.getElementById('stat-row').style.display = 'flex';
+  document.getElementById('now-next-row').style.display = 'none';
+  document.getElementById('start-btn').style.display = 'flex';
+  document.getElementById('timer-bar').style.display = 'none';
+
+  var clockEl = document.getElementById('timer-clock');
+  clockEl.classList.remove('red', 'done');
+  var statusEl = document.getElementById('timer-status');
+  statusEl.textContent = 'Stop';
+  statusEl.classList.remove('done');
+  document.getElementById('water-fill').classList.remove('full');
+
+  setRecipe(currentRecipeName);
 }
 </script>
 
