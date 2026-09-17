@@ -73,7 +73,8 @@
   .nn-time { font-size: 16px; font-weight: 400; color: #ffffff; line-height: 1.3; font-variant-numeric: tabular-nums; }
   .nn-done-text { color: #ffffff; }
 
-  .vessels { display: flex; flex-direction: column; align-items: center; gap: 21px; margin-bottom: 24px; }
+  .vessels { position: relative; display: flex; flex-direction: column; align-items: center; gap: 21px; width: 160px; margin: 0 auto 24px; }
+  .vessels-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
   .vessel-coffee { position: relative; width: 160px; height: 118px; }
   .vessel-coffee svg { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -96,12 +97,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-  .vessel-water-fill {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
   }
 
   .btn-start {
@@ -180,13 +175,13 @@
   <div class="divider-row" id="now-next-row" style="display:none"></div>
 
   <div class="vessels">
+    <canvas class="vessels-overlay" id="water-fill" width="160" height="360"></canvas>
     <div class="vessel-coffee">
       <svg viewBox="-1 -1 162 120" preserveAspectRatio="none">
         <path d="M0,0 L27.4,118" stroke="#8d8d8d" stroke-width="1" fill="none"/>
         <path d="M160,0 L132.6,118" stroke="#8d8d8d" stroke-width="1" fill="none"/>
         <path d="M27.4,118 L132.6,118" stroke="#8d8d8d" stroke-width="1" fill="none"/>
         <path d="M0,118.5 L160,118.5" stroke="#8d8d8d" stroke-width="1" fill="none"/>
-        <path d="M4,17.2 L156,17.2" stroke="#8d8d8d" stroke-width="1" stroke-dasharray="4,4" fill="none"/>
       </svg>
       <div class="vessel-label">
         <span class="vessel-label-key">Coffee</span>
@@ -194,7 +189,6 @@
       </div>
     </div>
     <div class="vessel-water">
-      <canvas class="vessel-water-fill" id="water-fill" width="144" height="221"></canvas>
       <div class="vessel-label">
         <span class="vessel-label-key">Water</span>
         <span class="vessel-label-val" id="water-val"></span>
@@ -313,85 +307,135 @@ function formatTemp(str) {
   return str.replace('°C', ' °C');
 }
 
-// --- Water drip fill ---
+// --- Pour-over drip animation ---
+// Shared canvas covers the funnel, the gap below it, and the glass, so a
+// drip can travel visually from one into the other.
+
+var COFFEE_H = 118;
+var GAP_H = 21;
+var GLASS_W = 144;
+var GLASS_H = 221;
+var GLASS_LEFT = 8; // (160 - 144) / 2
+var GLASS_TOP = COFFEE_H + GAP_H;
 
 var REST_FILL_PCT = 88;
-var DOT_COUNT = 420;
-var DOT_RADIUS = 2.6;
-var DRIP_RADIUS = 3;
-var DRIP_DURATION = 420;
-var DRIP_SPAWN_MS = 200;
+var DOT_RADIUS = 3.5;
+var DOT_COUNT = 850;
+var DRIP_DURATION = 550;
+var STEP_POUR_DELAY = 150;
 
 var waterCanvas = document.getElementById('water-fill');
 var waterCtx = waterCanvas.getContext('2d');
-var dotPositions = buildDotPositions(DOT_COUNT, waterCanvas.width, waterCanvas.height);
-var currentFillPct = 0;
-var drips = [];
-var dripSpawnTimer = null;
+var dotPositions = buildGlassDotPositions(DOT_COUNT);
 
-function buildDotPositions(count, width, height) {
+var filterQueue = [];       // dots poured into the filter, waiting to drip
+var activeDrips = [];       // dots currently falling from filter to glass
+var reservedCount = 0;      // glass dots already claimed (landed + in flight)
+var glassRevealedCount = 0; // glass dots actually visible (landed)
+var lastStepIdx = -1;
+var nextDripTime = 0;
+var currentDripInterval = 300;
+
+function buildGlassDotPositions(count) {
   var dots = [];
   for (var i = 0; i < count; i++) {
-    var x = Math.random() * width;
-    var y = Math.random() * height;
-    dots.push({ x: x, y: y, r: DOT_RADIUS * (0.7 + Math.random() * 0.6), key: (height - y) + Math.random() * 26 });
+    var x = GLASS_LEFT + Math.random() * GLASS_W;
+    var y = GLASS_TOP + Math.random() * GLASS_H;
+    dots.push({ x: x, y: y, key: (GLASS_TOP + GLASS_H - y) + Math.random() * 26 });
   }
   dots.sort(function (a, b) { return a.key - b.key; });
   return dots;
 }
 
-function fillSurfaceY(pct) {
-  return waterCanvas.height * (1 - pct / 100);
+function randomFunnelPoint() {
+  var y = 15 + Math.random() * 90;
+  var leftX = 27.4 * (y / COFFEE_H);
+  var rightX = 160 - 27.4 * (y / COFFEE_H);
+  return { x: leftX + Math.random() * (rightX - leftX), y: y };
 }
 
-function setWaterFillPct(pct) {
-  currentFillPct = pct;
+// Resting look (before starting / after done): a static, non-animated fill.
+function setRestingFill() {
+  filterQueue = [];
+  activeDrips = [];
+  reservedCount = Math.round((REST_FILL_PCT / 100) * dotPositions.length);
+  glassRevealedCount = reservedCount;
 }
 
-function spawnDrip() {
-  drips.push({
-    x: waterCanvas.width * (0.15 + Math.random() * 0.7),
-    startY: -DRIP_RADIUS * 2,
-    targetY: fillSurfaceY(currentFillPct),
+// Called once per new step (bloom, pour 2, ...) to pour that step's water
+// into the filter, to be dripped out gradually over the step's duration.
+function onStepStart(prevMl, curMl, totalMl, stepStartSec, stepEndSec) {
+  var addedMl = curMl - prevMl;
+  if (addedMl <= 0 || totalMl <= 0) return;
+  var dotsForStep = Math.max(1, Math.round(DOT_COUNT * (addedMl / totalMl)));
+  for (var i = 0; i < dotsForStep; i++) filterQueue.push(randomFunnelPoint());
+  var stepDurationMs = Math.max(200, (stepEndSec - stepStartSec) * 1000);
+  currentDripInterval = stepDurationMs / dotsForStep;
+  nextDripTime = performance.now() + STEP_POUR_DELAY;
+}
+
+function resetBrewAnimation() {
+  filterQueue = [];
+  activeDrips = [];
+  reservedCount = 0;
+  glassRevealedCount = 0;
+  lastStepIdx = -1;
+}
+
+function spawnDripFromFilter() {
+  if (reservedCount >= dotPositions.length) {
+    filterQueue.shift();
+    return;
+  }
+  var fdot = filterQueue.shift();
+  var target = dotPositions[reservedCount];
+  reservedCount++;
+  activeDrips.push({
+    x: fdot.x,
+    startY: 108,
+    targetX: target.x,
+    targetY: target.y,
     startTime: performance.now(),
   });
 }
 
-function startDrips() {
-  if (dripSpawnTimer) return;
-  dripSpawnTimer = setInterval(spawnDrip, DRIP_SPAWN_MS);
-}
-
-function stopDrips() {
-  clearInterval(dripSpawnTimer);
-  dripSpawnTimer = null;
-  drips.length = 0;
-}
-
 function drawWater() {
-  waterCtx.clearRect(0, 0, waterCanvas.width, waterCanvas.height);
+  var now = performance.now();
 
-  var filledCount = Math.round((currentFillPct / 100) * dotPositions.length);
-  waterCtx.fillStyle = 'rgba(141, 141, 141, 0.4)';
-  for (var i = 0; i < filledCount; i++) {
+  if (filterQueue.length > 0 && now >= nextDripTime) {
+    spawnDripFromFilter();
+    nextDripTime = now + currentDripInterval;
+  }
+
+  while (activeDrips.length > 0 && (now - activeDrips[0].startTime) >= DRIP_DURATION) {
+    activeDrips.shift();
+    glassRevealedCount++;
+  }
+
+  waterCtx.clearRect(0, 0, waterCanvas.width, waterCanvas.height);
+  waterCtx.fillStyle = 'rgba(141, 141, 141, 0.3)';
+
+  for (var i = 0; i < glassRevealedCount; i++) {
     var dot = dotPositions[i];
     waterCtx.beginPath();
-    waterCtx.arc(dot.x, dot.y, dot.r, 0, Math.PI * 2);
+    waterCtx.arc(dot.x, dot.y, DOT_RADIUS, 0, Math.PI * 2);
     waterCtx.fill();
   }
 
-  var now = performance.now();
-  waterCtx.fillStyle = 'rgba(200, 200, 200, 0.75)';
-  for (var d = drips.length - 1; d >= 0; d--) {
-    var drip = drips[d];
-    var progress = (now - drip.startTime) / DRIP_DURATION;
-    if (progress >= 1) {
-      drips.splice(d, 1);
-      continue;
-    }
+  for (var f = 0; f < filterQueue.length; f++) {
+    var fdot = filterQueue[f];
+    waterCtx.beginPath();
+    waterCtx.arc(fdot.x, fdot.y, DOT_RADIUS, 0, Math.PI * 2);
+    waterCtx.fill();
+  }
+
+  for (var d = 0; d < activeDrips.length; d++) {
+    var drip = activeDrips[d];
+    var progress = Math.min(1, (now - drip.startTime) / DRIP_DURATION);
+    var x = drip.x + (drip.targetX - drip.x) * progress;
     var y = drip.startY + (drip.targetY - drip.startY) * progress;
     waterCtx.beginPath();
-    waterCtx.arc(drip.x, y, DRIP_RADIUS, 0, Math.PI * 2);
+    waterCtx.arc(x, y, DOT_RADIUS, 0, Math.PI * 2);
     waterCtx.fill();
   }
 
@@ -416,7 +460,7 @@ function setRecipe(name) {
 
   document.getElementById('coffee-val').textContent = r.koffie;
   document.getElementById('water-val').textContent = mlLabel(parseMl(r.water));
-  setWaterFillPct(REST_FILL_PCT);
+  setRestingFill();
 }
 
 setRecipe('allround');
@@ -512,7 +556,7 @@ function startTimer() {
   document.getElementById('timer-bar').style.display = 'flex';
 
   requestWakeLock();
-  startDrips();
+  resetBrewAnimation();
 
   lastBeepSecond = null;
   timerStart = Date.now();
@@ -543,13 +587,9 @@ function renderTimer(pourSteps, totalMl, elapsed, preciseElapsed) {
   var remaining = boundarySeconds - displayElapsed;
   var isRed = remaining >= 0 && remaining <= 5;
 
-  var fillFrac = boundarySeconds > cur.seconds
-    ? Math.min(1, Math.max(0, (displayPreciseElapsed - cur.seconds) / (boundarySeconds - cur.seconds)))
-    : 1;
-  var fillMl = prevMl + (curMl - prevMl) * fillFrac;
-  var fillPct = totalMl > 0 ? Math.min(100, Math.max(0, (fillMl / totalMl) * 100)) : 0;
-  if (!finished) {
-    setWaterFillPct(fillPct);
+  if (!finished && idx !== lastStepIdx) {
+    lastStepIdx = idx;
+    onStepStart(prevMl, curMl, totalMl, cur.seconds, boundarySeconds);
   }
 
   var clockEl = document.getElementById('timer-clock');
@@ -591,8 +631,7 @@ function renderTimer(pourSteps, totalMl, elapsed, preciseElapsed) {
     clockEl.classList.add('done');
     document.getElementById('timer-status').textContent = 'Done!';
     document.getElementById('timer-status').classList.add('done');
-    stopDrips();
-    setWaterFillPct(REST_FILL_PCT);
+    setRestingFill();
   }
 }
 
@@ -602,7 +641,7 @@ function stopTimer() {
   timerEndSeconds = null;
   klaarStartSeconds = null;
   releaseWakeLock();
-  stopDrips();
+  setRestingFill();
 
   document.getElementById('recipe-select').disabled = false;
   document.getElementById('stat-row').style.display = 'flex';
