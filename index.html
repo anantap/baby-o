@@ -11,17 +11,19 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
   body {
     background: #0e0e0e;
     color: #c8c8c8;
     font-family: 'IBM Plex Mono', monospace;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
     display: flex;
     align-items: flex-start;
     justify-content: center;
     padding: 16px 8px 48px;
   }
-  .wrap { width: 100%; max-width: 393px; }
+  .wrap { width: 100%; max-width: 393px; transform-origin: top center; }
 
   .pill {
     display: block;
@@ -620,6 +622,7 @@ function startTimer() {
   document.getElementById('now-next-row').style.display = 'flex';
   document.getElementById('start-btn').style.display = 'none';
   document.getElementById('timer-bar').style.display = 'flex';
+  fitToViewport();
 
   requestWakeLock();
   resetBrewAnimation();
@@ -734,7 +737,29 @@ function stopTimer() {
   statusEl.classList.remove('done');
 
   setRecipe(currentRecipeName);
+  fitToViewport();
 }
+
+// --- Fit-to-viewport scaling ---
+// The layout has a fixed natural height; rather than letting short
+// viewports scroll, scale the whole thing down uniformly so it always
+// fits in one screen.
+var wrapEl = document.querySelector('.wrap');
+
+function fitToViewport() {
+  wrapEl.style.transform = 'none';
+  var naturalHeight = wrapEl.scrollHeight;
+  var availableHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  var scale = Math.min(1, availableHeight / naturalHeight);
+  wrapEl.style.transform = scale < 1 ? 'scale(' + scale + ')' : 'none';
+}
+
+window.addEventListener('resize', fitToViewport);
+window.addEventListener('orientationchange', fitToViewport);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fitToViewport);
+}
+fitToViewport();
 </script>
 
 </body>
