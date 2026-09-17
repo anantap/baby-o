@@ -99,9 +99,9 @@
     bottom: 22%;
     height: 1px;
     background: #444;
-    transition: bottom 0.5s ease;
+    transition: bottom 0.15s linear;
   }
-  .vessel-water-fill.full { bottom: calc(100% - 1px); background: #4dd68c; }
+  .vessel-water-fill.full { bottom: calc(100% - 1px); background: #4dd68c; transition: bottom 0.5s ease; }
 
   .btn-start {
     appearance: none;
@@ -426,14 +426,16 @@ function startTimer() {
   timerStart = Date.now();
   renderTimer(pourSteps, totalMl, 0);
   timerInterval = setInterval(function () {
-    var elapsed = Math.floor((Date.now() - timerStart) / 1000);
-    renderTimer(pourSteps, totalMl, elapsed);
-  }, 200);
+    var elapsedMs = Date.now() - timerStart;
+    renderTimer(pourSteps, totalMl, Math.floor(elapsedMs / 1000), elapsedMs / 1000);
+  }, 100);
 }
 
-function renderTimer(pourSteps, totalMl, elapsed) {
+function renderTimer(pourSteps, totalMl, elapsed, preciseElapsed) {
+  if (preciseElapsed === undefined) preciseElapsed = elapsed;
   var finished = elapsed >= timerEndSeconds;
   var displayElapsed = finished ? timerEndSeconds : elapsed;
+  var displayPreciseElapsed = finished ? timerEndSeconds : preciseElapsed;
 
   var idx = 0;
   for (var i = 0; i < pourSteps.length; i++) {
@@ -448,6 +450,16 @@ function renderTimer(pourSteps, totalMl, elapsed) {
   var boundarySeconds = next ? next.seconds : klaarStartSeconds;
   var remaining = boundarySeconds - displayElapsed;
   var isRed = remaining >= 0 && remaining <= 5;
+
+  var fillFrac = boundarySeconds > cur.seconds
+    ? Math.min(1, Math.max(0, (displayPreciseElapsed - cur.seconds) / (boundarySeconds - cur.seconds)))
+    : 1;
+  var fillMl = prevMl + (curMl - prevMl) * fillFrac;
+  var fillPct = totalMl > 0 ? Math.min(100, Math.max(0, (fillMl / totalMl) * 100)) : 0;
+  var waterFillEl = document.getElementById('water-fill');
+  if (!finished) {
+    waterFillEl.style.bottom = fillPct + '%';
+  }
 
   var clockEl = document.getElementById('timer-clock');
   clockEl.textContent = formatClock(displayElapsed);
@@ -488,7 +500,8 @@ function renderTimer(pourSteps, totalMl, elapsed) {
     clockEl.classList.add('done');
     document.getElementById('timer-status').textContent = 'Done!';
     document.getElementById('timer-status').classList.add('done');
-    document.getElementById('water-fill').classList.add('full');
+    waterFillEl.style.bottom = '';
+    waterFillEl.classList.add('full');
   }
 }
 
@@ -510,7 +523,9 @@ function stopTimer() {
   var statusEl = document.getElementById('timer-status');
   statusEl.textContent = 'Stop';
   statusEl.classList.remove('done');
-  document.getElementById('water-fill').classList.remove('full');
+  var waterFillEl = document.getElementById('water-fill');
+  waterFillEl.classList.remove('full');
+  waterFillEl.style.bottom = '';
 
   setRecipe(currentRecipeName);
 }
