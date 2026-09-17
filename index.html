@@ -400,6 +400,14 @@ var lastStepIdx = -1;
 var nextDripTime = 0;
 var currentDripInterval = 300;
 
+var POUR_FILL_DURATION = 450; // ms for the filter to visibly fill as the pour happens
+var pourStartTime = 0;
+var pourFromFrac = 0; // filter level at the moment the pour started (usually 0)
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
 // Resting look (before starting / after done): a static, settled pool.
 function setRestingFill() {
   filterRemaining = 0;
@@ -413,12 +421,14 @@ function setRestingFill() {
 function onStepStart(prevMl, curMl, totalMl, stepStartSec, stepEndSec) {
   var addedMl = curMl - prevMl;
   if (addedMl <= 0 || totalMl <= 0) return;
+  pourFromFrac = filterStepTotal > 0 ? Math.max(0, Math.min(1, filterRemaining / filterStepTotal)) : 0;
+  pourStartTime = performance.now();
   var dotsForStep = Math.max(1, Math.round(DOT_COUNT * (addedMl / totalMl)));
   filterRemaining += dotsForStep;
   filterStepTotal = filterRemaining;
   var stepDurationMs = Math.max(200, (stepEndSec - stepStartSec) * 1000);
   currentDripInterval = stepDurationMs / dotsForStep;
-  nextDripTime = performance.now() + STEP_POUR_DELAY;
+  nextDripTime = performance.now() + Math.max(STEP_POUR_DELAY, POUR_FILL_DURATION);
 }
 
 function resetBrewAnimation() {
@@ -442,7 +452,11 @@ function spawnDripFromFilter() {
 // as it drains, clipped to the funnel's taper.
 function drawFilterPool() {
   if (filterStepTotal <= 0 || filterRemaining <= 0) return;
-  var frac = Math.max(0, Math.min(1, filterRemaining / filterStepTotal));
+  var drainFrac = Math.max(0, Math.min(1, filterRemaining / filterStepTotal));
+  var pourT = Math.max(0, Math.min(1, (performance.now() - pourStartTime) / POUR_FILL_DURATION));
+  var pourFrac = pourFromFrac + (1 - pourFromFrac) * easeOutCubic(pourT);
+  var frac = Math.min(pourFrac, drainFrac);
+  if (frac <= 0) return;
   var levelY = FILTER_LEVEL_BOTTOM_Y - frac * (FILTER_LEVEL_BOTTOM_Y - FILTER_LEVEL_TOP_Y);
   var leftAt = function (y) { return FILTER_TAPER_TOP_X * (y / COFFEE_H); };
   var rightAt = function (y) { return 160 - FILTER_TAPER_TOP_X * (y / COFFEE_H); };
