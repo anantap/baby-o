@@ -216,6 +216,7 @@ var recipes = {
     temp: '94°C',
     stand: '6–7',
     grind: 'Coarse',
+    focus: 'Balance',
     steps: [
       ['0:00', 'Bloom',        '60 g',  'Rondje gieten, 40 sec wachten'],
       ['0:40', 'Pour 2',       '130 g', 'Rondje gieten'],
@@ -232,6 +233,7 @@ var recipes = {
     temp: '90–92°C',
     stand: '6–7',
     grind: 'Coarse',
+    focus: 'Fruitiness',
     steps: [
       ['0:00', 'Bloom',        '40 g',  'Rondje gieten, 40 sec wachten'],
       ['0:40', 'Pour 2',       '90 g',  'Rondje gieten'],
@@ -248,6 +250,7 @@ var recipes = {
     temp: '94°C',
     stand: '6–7',
     grind: 'Coarse',
+    focus: 'Sweetness',
     steps: [
       ['0:00', 'Bloom',        '50 g',  'Rondje gieten, 40 sec wachten'],
       ['0:40', 'Pour 2',       '90 g',  'Rondje gieten'],
@@ -266,6 +269,7 @@ var recipes = {
     temp: '90°C',
     stand: '5–6',
     grind: 'Fine',
+    focus: 'Brightness',
     steps: [
       ['0:00', 'Bloom',        '60 g',  'Rondje gieten, 45 sec wachten'],
       ['0:45', 'Pour 2',       '130 g', 'Rondje gieten'],
@@ -282,6 +286,7 @@ var recipes = {
     temp: '94°C',
     stand: '6–7',
     grind: 'Coarse',
+    focus: 'Calm',
     steps: [
       ['0:00', 'Bloom',        '50 g',  'Rondje gieten, 50 sec wachten'],
       ['0:50', 'Pour 2',       '120 g', 'Rondje gieten'],
@@ -480,7 +485,7 @@ function drawWater() {
 
   if (waterCounterActive) {
     var countT = Math.max(0, Math.min(1, (now - waterCounterStartTime) / WATER_COUNT_DURATION));
-    var countVal = Math.round(waterCounterFrom + (waterCounterTo - waterCounterFrom) * countT);
+    var countVal = Math.round(waterCounterFrom + (waterCounterTo - waterCounterFrom) * easeOutCubic(countT));
     document.getElementById('water-val').textContent = gramsLabel(countVal);
   }
 
@@ -510,13 +515,14 @@ function setRecipe(name) {
 
   var pours = r.steps.length - 1;
   var grindLabel = r.grind.toUpperCase() + ' GRIND';
+  var focusLabel = 'FOCUS ON ' + r.focus.toUpperCase();
 
   document.getElementById('stat-row').innerHTML =
-    '<div class="stat-cell">' + formatTemp(r.temp) + '</div>' +
+    '<div class="stat-cell">' + formatTemp(r.temp) + ' / ' + pours + ' POURS</div>' +
     '<div class="v-div"></div>' +
-    '<div class="stat-cell">' + pours + ' POURS</div>' +
+    '<div class="stat-cell">' + grindLabel + '</div>' +
     '<div class="v-div"></div>' +
-    '<div class="stat-cell">' + grindLabel + '</div>';
+    '<div class="stat-cell">' + focusLabel + '</div>';
 
   document.getElementById('coffee-val').textContent = r.koffie;
   document.getElementById('water-val').textContent = gramsLabel(parseGrams(r.water));
