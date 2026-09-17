@@ -396,8 +396,8 @@ function renderTimer(steps, elapsed) {
 
   var nowEl = document.getElementById('timer-now');
   var nextEl = document.getElementById('timer-next');
-  nowEl.textContent = 'now: ' + cur.vol;
-  nextEl.textContent = 'next: ' + (next ? next.vol : '—');
+  nowEl.textContent = cur.vol;
+  nextEl.textContent = next ? next.vol : '—';
   nowEl.classList.toggle('red', isRed);
   nextEl.classList.toggle('red', isRed);
 
