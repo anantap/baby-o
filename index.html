@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0e0e0e">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: #0e0e0e;
@@ -19,113 +19,150 @@
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding: 2rem;
+    padding: 16px 8px 48px;
   }
-  .wrap { width: 100%; max-width: 580px; }
-  .select-wrap { margin-bottom: 2rem; position: relative; display: inline-block; }
-  select {
+  .wrap { width: 100%; max-width: 393px; }
+
+  .pill {
+    display: block;
+    width: 100%;
+    height: 64px;
     appearance: none;
     background: #0e0e0e;
-    border: 1px solid #2a2a2a;
-    color: #e0e0e0;
+    border: 1px solid #373737;
+    border-radius: 8px;
+    color: #ffffff;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.75rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    font-weight: 400;
+    font-size: 16px;
+    padding: 0 40px 0 16px;
     cursor: pointer;
     outline: none;
   }
-  select:hover { border-color: #444; }
+  .pill:hover { border-color: #555; }
+  .pill:disabled { opacity: 0.6; cursor: default; }
+  .select-wrap { position: relative; margin-bottom: 24px; }
   .select-arrow {
     pointer-events: none;
     position: absolute;
-    right: 0.75rem;
+    right: 16px;
     top: 50%;
     transform: translateY(-50%);
-    color: #555;
+    color: #8d8d8d;
     font-size: 0.7rem;
   }
-  .title {
-    font-size: 0.65rem;
-    letter-spacing: 0.18em;
+
+  .divider-row { display: flex; align-items: center; min-height: 80px; margin-bottom: 24px; }
+  .v-div { align-self: stretch; width: 1px; background: #373737; }
+
+  .stat-cell {
+    flex: 1;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #ffffff;
     text-transform: uppercase;
-    color: #888;
-    margin-bottom: 1.5rem;
   }
-  .sub-label {
-    font-size: 0.6rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: #555;
-    margin-top: 1.8rem;
-    margin-bottom: 0.6rem;
+
+  .nn-cell { flex: 1; }
+  .nn-cell:last-child { padding-left: 16px; }
+  .nn-cell:first-child { padding-right: 16px; }
+  .nn-label { font-size: 16px; text-transform: uppercase; color: #8d8d8d; margin-bottom: 8px; }
+  .nn-value { font-size: 16px; font-weight: 400; color: #ffffff; line-height: 1.3; font-variant-numeric: tabular-nums; text-transform: uppercase; }
+  .nn-time { font-size: 16px; font-weight: 400; color: #ffffff; line-height: 1.3; font-variant-numeric: tabular-nums; }
+  .nn-done-text { color: #ffffff; }
+
+  .vessels { position: relative; display: flex; flex-direction: column; align-items: center; gap: 21px; width: 160px; margin: 0 auto 24px; }
+  .vessels-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  .vessel-coffee { position: relative; width: 160px; height: 118px; }
+  .vessel-coffee svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .vessel-label {
+    position: absolute;
+    top: 58%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
   }
-  .stats { display: flex; gap: 2rem; margin-bottom: 1.8rem; flex-wrap: wrap; }
-  .stat-item { display: flex; flex-direction: column; gap: 0.25rem; }
-  .stat-key { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: #555; }
-  .stat-val { font-size: 0.85rem; color: #e0e0e0; font-weight: 500; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-  th {
-    text-align: left;
-    font-size: 0.6rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: #777;
-    padding: 0 0 0.6rem 0;
-    font-weight: 400;
-    border-bottom: 1px solid #2a2a2a;
+  .vessel-label-key { display: block; font-size: 16px; letter-spacing: 1.6px; text-transform: uppercase; color: #8d8d8d; margin-bottom: 6px; }
+  .vessel-label-val { display: block; font-size: 16px; font-weight: 400; letter-spacing: 1.6px; color: #ffffff; }
+
+  .vessel-water {
+    position: relative;
+    width: 144px;
+    height: 221px;
+    border: 1px solid #8d8d8d;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  th:not(:first-child) { padding-left: 1.5rem; }
-  td { padding: 0.75rem 0; border-bottom: 1px solid #1e1e1e; color: #bbb; font-weight: 300; }
-  td:not(:first-child) { padding-left: 1.5rem; }
-  tbody tr:last-child td { border-bottom: none; }
-  tbody tr:hover td { color: #eee; }
-  .time { color: #e0e0e0; font-weight: 500; font-variant-numeric: tabular-nums; }
-  .vol { color: #e0e0e0; }
-  .note { color: #666; }
-  .footer { margin-top: 2rem; font-size: 0.6rem; letter-spacing: 0.1em; color: #555; text-transform: uppercase; line-height: 1.8; }
-  .footer span { color: #999; }
-  .btn {
+
+  .btn-start {
     appearance: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    width: 100%;
+    height: 120px;
     background: #0e0e0e;
-    border: 1px solid #2a2a2a;
-    color: #e0e0e0;
+    border: 1px solid #8d8d8d;
+    border-radius: 8px;
+    color: #ffffff;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.75rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    padding: 0.6rem 1.2rem;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: 4px;
     cursor: pointer;
   }
-  .btn:hover { border-color: #444; }
-  .start-row { margin-bottom: 1.8rem; }
-  .timer-view { display: none; }
-  .timer-clock {
-    font-size: 3.5rem;
-    font-weight: 500;
+  .btn-start:hover { border-color: #aaa; }
+  .btn-start .arrow { font-size: 1.4rem; color: #ffffff; }
+
+  .timer-bar {
+    display: flex;
+    align-items: stretch;
+    height: 120px;
+    border: 1px solid #8d8d8d;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .clock-cell {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 64px;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
-    color: #e0e0e0;
-    margin-bottom: 0.5rem;
+    color: #ffffff;
     transition: color 0.15s;
   }
-  .timer-clock.red { color: #ff4d4d; }
-  .timer-step {
-    font-size: 0.9rem;
-    letter-spacing: 0.1em;
+  .clock-cell.red { color: #ce0000; }
+  .clock-cell.done { color: #00ab1f; }
+  .timer-bar .v-div { background: #373737; }
+  .status-cell {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 400;
+    letter-spacing: 2px;
     text-transform: uppercase;
-    color: #999;
-    margin-bottom: 1.8rem;
+    color: #373737;
+    cursor: pointer;
   }
-  .timer-volumes { display: flex; gap: 2rem; margin-bottom: 1.5rem; }
-  .timer-volumes .stat-val.red { color: #ff4d4d; }
-  .timer-note { font-size: 0.8rem; color: #888; margin-bottom: 2rem; min-height: 1.2em; }
+  .status-cell.done { color: #00ab1f; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="select-wrap">
-    <select id="recipe-select" onchange="setRecipe(this.value)">
+    <select class="pill" id="recipe-select" onchange="setRecipe(this.value)">
       <option value="allround">Allround</option>
       <option value="zarza">Zarza</option>
       <option value="matteo">Matteo</option>
@@ -134,38 +171,40 @@
     </select>
     <span class="select-arrow">&#9660;</span>
   </div>
-  <div class="title" id="title"></div>
-  <div class="stats" id="stats"></div>
 
-  <div class="start-row" id="start-row">
-    <button class="btn" id="start-btn" onclick="startTimer()">&#9654; Start</button>
-  </div>
+  <div class="divider-row" id="stat-row"></div>
+  <div class="divider-row" id="now-next-row" style="display:none"></div>
 
-  <div id="recipe-view">
-    <div class="sub-label">Stappenplan</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Tijd</th>
-          <th>Stap</th>
-          <th>Tot</th>
-          <th>Notitie</th>
-        </tr>
-      </thead>
-      <tbody id="steps"></tbody>
-    </table>
-    <div class="footer" id="footer"></div>
-  </div>
-
-  <div class="timer-view" id="timer-view">
-    <div class="timer-clock" id="timer-clock">0:00</div>
-    <div class="timer-step" id="timer-step"></div>
-    <div class="timer-volumes">
-      <div class="stat-item"><span class="stat-key">Now</span><span class="stat-val" id="timer-now"></span></div>
-      <div class="stat-item"><span class="stat-key">Next</span><span class="stat-val" id="timer-next"></span></div>
+  <div class="vessels">
+    <canvas class="vessels-overlay" id="water-fill" width="160" height="360"></canvas>
+    <div class="vessel-coffee">
+      <svg viewBox="-1 -1 162 120" preserveAspectRatio="none">
+        <path d="M0,0 L27.4,118" stroke="#8d8d8d" stroke-width="1" fill="none"/>
+        <path d="M160,0 L132.6,118" stroke="#8d8d8d" stroke-width="1" fill="none"/>
+        <path d="M27.4,118 L132.6,118" stroke="#8d8d8d" stroke-width="1" fill="none"/>
+        <path d="M0,118.5 L160,118.5" stroke="#8d8d8d" stroke-width="1" fill="none"/>
+      </svg>
+      <div class="vessel-label">
+        <span class="vessel-label-key">Coffee</span>
+        <span class="vessel-label-val" id="coffee-val"></span>
+      </div>
     </div>
-    <div class="timer-note" id="timer-note"></div>
-    <button class="btn" id="stop-btn" onclick="stopTimer()">&#9632; Stop</button>
+    <div class="vessel-water">
+      <div class="vessel-label">
+        <span class="vessel-label-key">Water</span>
+        <span class="vessel-label-val" id="water-val"></span>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-start" id="start-btn" onclick="startTimer()">
+    <span>START</span><span class="arrow">&#9654;</span>
+  </button>
+
+  <div class="timer-bar" id="timer-bar" style="display:none">
+    <div class="clock-cell" id="timer-clock">0:00</div>
+    <div class="v-div"></div>
+    <div class="status-cell" id="timer-status" onclick="stopTimer()">Stop</div>
   </div>
 </div>
 <script>
@@ -176,6 +215,7 @@ var recipes = {
     water: '300 ml',
     temp: '94°C',
     stand: '6–7',
+    grind: 'Coarse',
     steps: [
       ['0:00', 'Bloom',        '60 ml',  'Rondje gieten, 40 sec wachten'],
       ['0:40', 'Pour 2',       '130 ml', 'Rondje gieten'],
@@ -191,6 +231,7 @@ var recipes = {
     water: '200 ml',
     temp: '90–92°C',
     stand: '6–7',
+    grind: 'Coarse',
     steps: [
       ['0:00', 'Bloom',        '40 ml',  'Rondje gieten, 40 sec wachten'],
       ['0:40', 'Pour 2',       '90 ml',  'Rondje gieten'],
@@ -206,6 +247,7 @@ var recipes = {
     water: '250 ml',
     temp: '94°C',
     stand: '6–7',
+    grind: 'Coarse',
     steps: [
       ['0:00', 'Bloom',        '50 ml',  'Rondje gieten, 40 sec wachten'],
       ['0:40', 'Pour 2',       '90 ml',  'Rondje gieten'],
@@ -223,6 +265,7 @@ var recipes = {
     water: '300 ml',
     temp: '90°C',
     stand: '5–6',
+    grind: 'Fine',
     steps: [
       ['0:00', 'Bloom',        '60 ml',  'Rondje gieten, 45 sec wachten'],
       ['0:45', 'Pour 2',       '130 ml', 'Rondje gieten'],
@@ -238,6 +281,7 @@ var recipes = {
     water: '240 ml',
     temp: '94°C',
     stand: '6–7',
+    grind: 'Coarse',
     steps: [
       ['0:00', 'Bloom',        '50 ml',  'Rondje gieten, 50 sec wachten'],
       ['0:50', 'Pour 2',       '120 ml', 'Rondje gieten'],
@@ -251,29 +295,213 @@ var recipes = {
 
 var currentRecipeName = 'allround';
 
+function parseMl(str) {
+  var n = parseInt(str, 10);
+  return isNaN(n) ? 0 : n;
+}
+
+function mlLabel(n) {
+  return n + ' ML';
+}
+
+function formatTemp(str) {
+  return str.replace('°C', ' °C');
+}
+
+// --- Pour-over drip animation ---
+// Shared canvas covers the funnel, the gap below it, and the glass, so a
+// drip can travel visually from one into the other.
+//
+// Both the filter and the glass are solid pools rather than piles of
+// circles: the filter holds clear water that fills on each pour and drains
+// out the bottom, while the glass holds the darker brewed coffee that
+// rises as it collects. Only the drop in transit between them is drawn as
+// a circle.
+
+var COFFEE_H = 118;
+var GAP_H = 21;
+var GLASS_W = 144;
+var GLASS_H = 221;
+var GLASS_LEFT = 8; // (160 - 144) / 2
+var GLASS_TOP = COFFEE_H + GAP_H;
+var GLASS_FLOOR_Y = GLASS_TOP + GLASS_H;
+var GLASS_RADIUS = 5; // matches the CSS border-radius on the glass's bottom corners
+
+var DROP_RADIUS = 3.5;
+var MAX_HEIGHT_FRACTION = 0.70; // the coffee never rises above 70% of the glass
+var STEP_POUR_DELAY = 150;
+var FALL_SPEED = 0.6; // px/ms
+var MIN_FALL_DURATION = 90;
+var DRIPS_PER_FULL_BREW = 200; // total drip events across a whole recipe, for pacing
+
+var FILTER_TAPER_TOP_X = 27.4;   // x-inset of the taper at y=0 vs y=COFFEE_H
+var FILTER_LEVEL_TOP_Y = 15;     // filter pool surface when freshly poured (full)
+var FILTER_LEVEL_BOTTOM_Y = COFFEE_H; // fully drained (no visible pool)
+
+var WATER_COLOR = 'rgba(141, 141, 141, 0.55)';
+var COFFEE_COLOR = 'rgba(60, 60, 60, 0.9)'; // darker/more solid: brewed, not clear water
+
+var waterCanvas = document.getElementById('water-fill');
+var waterCtx = waterCanvas.getContext('2d');
+
+var filterRemaining = 0; // drips still sitting in the filter, waiting to drip
+var filterStepTotal = 0; // how many the current step started with
+var activeDrips = [];    // drops currently falling straight down
+var settledCount = 0;    // drips that have landed in the glass so far
+var lastStepIdx = -1;
+var nextDripTime = 0;
+var currentDripInterval = 300;
+
+var POUR_FILL_DURATION = 10000; // ms for the filter to visibly fill as the pour happens (a slow, easy pour)
+var pourStartTime = 0;
+var pourFromFrac = 0; // filter level at the moment the pour started (usually 0)
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function drawRoundedBottomRect(x, y, width, height, radius) {
+  var r = Math.max(0, Math.min(radius, height, width / 2));
+  waterCtx.beginPath();
+  waterCtx.moveTo(x, y);
+  waterCtx.lineTo(x + width, y);
+  waterCtx.lineTo(x + width, y + height - r);
+  waterCtx.arcTo(x + width, y + height, x + width - r, y + height, r);
+  waterCtx.lineTo(x + r, y + height);
+  waterCtx.arcTo(x, y + height, x, y + height - r, r);
+  waterCtx.closePath();
+  waterCtx.fill();
+}
+
+// Resting look (before starting / after done): a static, settled pool.
+function setRestingFill() {
+  filterRemaining = 0;
+  filterStepTotal = 0;
+  activeDrips = [];
+  settledCount = DRIPS_PER_FULL_BREW;
+}
+
+// Called once per new step (bloom, pour 2, ...): that step's water fills
+// the filter, to be dripped out gradually over the step's duration. The
+// drain starts almost immediately (as soon as the pour begins), not once
+// the pour finishes — the filter drains while it's still being poured
+// into, the same way a real one does.
+function onStepStart(prevMl, curMl, totalMl, stepStartSec, stepEndSec) {
+  var addedMl = curMl - prevMl;
+  if (addedMl <= 0 || totalMl <= 0) return;
+  pourFromFrac = filterStepTotal > 0 ? Math.max(0, Math.min(1, filterRemaining / filterStepTotal)) : 0;
+  pourStartTime = performance.now();
+  var dripsForStep = Math.max(1, Math.round(DRIPS_PER_FULL_BREW * (addedMl / totalMl)));
+  filterRemaining += dripsForStep;
+  filterStepTotal = filterRemaining;
+  var stepDurationMs = Math.max(200, (stepEndSec - stepStartSec) * 1000);
+  var drainWindowMs = Math.max(200, stepDurationMs - STEP_POUR_DELAY);
+  currentDripInterval = drainWindowMs / dripsForStep;
+  nextDripTime = performance.now() + STEP_POUR_DELAY;
+}
+
+function resetBrewAnimation() {
+  filterRemaining = 0;
+  filterStepTotal = 0;
+  activeDrips = [];
+  settledCount = 0;
+  lastStepIdx = -1;
+}
+
+function glassLevelY() {
+  var frac = Math.max(0, Math.min(MAX_HEIGHT_FRACTION, MAX_HEIGHT_FRACTION * settledCount / DRIPS_PER_FULL_BREW));
+  return GLASS_FLOOR_Y - frac * GLASS_H;
+}
+
+function spawnDripFromFilter() {
+  filterRemaining--;
+  var dropX = GLASS_LEFT + DROP_RADIUS + Math.random() * (GLASS_W - DROP_RADIUS * 2);
+  var startY = FILTER_LEVEL_BOTTOM_Y - 10;
+  var restY = glassLevelY();
+  var duration = Math.max(MIN_FALL_DURATION, (restY - startY) / FALL_SPEED);
+  activeDrips.push({ x: dropX, startY: startY, restY: restY, startTime: performance.now(), duration: duration });
+}
+
+// The filter as a solid pool (not individual drops) that shrinks as it
+// drains, clipped to the funnel's taper.
+function drawFilterPool() {
+  if (filterStepTotal <= 0 || filterRemaining <= 0) return;
+  var drainFrac = Math.max(0, Math.min(1, filterRemaining / filterStepTotal));
+  var pourT = Math.max(0, Math.min(1, (performance.now() - pourStartTime) / POUR_FILL_DURATION));
+  var pourFrac = pourFromFrac + (1 - pourFromFrac) * easeOutCubic(pourT);
+  var frac = Math.min(pourFrac, drainFrac);
+  if (frac <= 0) return;
+  var levelY = FILTER_LEVEL_BOTTOM_Y - frac * (FILTER_LEVEL_BOTTOM_Y - FILTER_LEVEL_TOP_Y);
+  var leftAt = function (y) { return FILTER_TAPER_TOP_X * (y / COFFEE_H); };
+  var rightAt = function (y) { return 160 - FILTER_TAPER_TOP_X * (y / COFFEE_H); };
+  waterCtx.fillStyle = WATER_COLOR;
+  waterCtx.beginPath();
+  waterCtx.moveTo(leftAt(levelY), levelY);
+  waterCtx.lineTo(rightAt(levelY), levelY);
+  waterCtx.lineTo(rightAt(COFFEE_H), COFFEE_H);
+  waterCtx.lineTo(leftAt(COFFEE_H), COFFEE_H);
+  waterCtx.closePath();
+  waterCtx.fill();
+}
+
+// The glass as a solid, darker pool that rises as drips land.
+function drawGlassPool() {
+  if (settledCount <= 0) return;
+  var levelY = glassLevelY();
+  waterCtx.fillStyle = COFFEE_COLOR;
+  drawRoundedBottomRect(GLASS_LEFT, levelY, GLASS_W, GLASS_FLOOR_Y - levelY, GLASS_RADIUS);
+}
+
+function drawWater() {
+  var now = performance.now();
+
+  if (filterRemaining > 0 && now >= nextDripTime) {
+    spawnDripFromFilter();
+    nextDripTime = now + currentDripInterval;
+  }
+
+  while (activeDrips.length > 0 && (now - activeDrips[0].startTime) >= activeDrips[0].duration) {
+    activeDrips.shift();
+    settledCount++;
+  }
+
+  waterCtx.clearRect(0, 0, waterCanvas.width, waterCanvas.height);
+
+  drawFilterPool();
+  drawGlassPool();
+
+  waterCtx.fillStyle = WATER_COLOR;
+  for (var d = 0; d < activeDrips.length; d++) {
+    var drip = activeDrips[d];
+    var progress = Math.min(1, (now - drip.startTime) / drip.duration);
+    var y = drip.startY + (drip.restY - drip.startY) * progress;
+    waterCtx.beginPath();
+    waterCtx.arc(drip.x, y, DROP_RADIUS, 0, Math.PI * 2);
+    waterCtx.fill();
+  }
+
+  requestAnimationFrame(drawWater);
+}
+requestAnimationFrame(drawWater);
+
 function setRecipe(name) {
-var r = recipes[name];
-if (!r) return;
-currentRecipeName = name;
-document.getElementById('title').textContent = 'Orea O1 · Hario Mini Slim · ' + r.name + ' · Kalita Wave 155';
-var statsHTML = '';
-var statsData = [
-{ key: 'Koffie', val: r.koffie },
-{ key: 'Water',  val: r.water  },
-{ key: 'Temp',   val: r.temp   },
-{ key: 'Stand',  val: r.stand  }
-];
-for (var i = 0; i < statsData.length; i++) {
-statsHTML += '<div class="stat-item"><span class="stat-key">' + statsData[i].key + '</span><span class="stat-val">' + statsData[i].val + '</span></div>';
-}
-document.getElementById('stats').innerHTML = statsHTML;
-var stepsHTML = '';
-for (var j = 0; j < r.steps.length; j++) {
-var st = r.steps[j];
-stepsHTML += '<tr><td class="time">' + st[0] + '</td><td>' + st[1] + '</td><td class="vol">' + st[2] + '</td><td class="note">' + st[3] + '</td></tr>';
-}
-document.getElementById('steps').innerHTML = stepsHTML;
-document.getElementById('footer').innerHTML = r.footer;
+  var r = recipes[name];
+  if (!r) return;
+  currentRecipeName = name;
+
+  var pours = r.steps.length - 1;
+  var grindLabel = r.grind.toUpperCase() + ' GRIND';
+
+  document.getElementById('stat-row').innerHTML =
+    '<div class="stat-cell">' + formatTemp(r.temp) + '</div>' +
+    '<div class="v-div"></div>' +
+    '<div class="stat-cell">' + pours + ' POURS</div>' +
+    '<div class="v-div"></div>' +
+    '<div class="stat-cell">' + grindLabel + '</div>';
+
+  document.getElementById('coffee-val').textContent = r.koffie;
+  document.getElementById('water-val').textContent = mlLabel(parseMl(r.water));
+  setRestingFill();
 }
 
 setRecipe('allround');
@@ -287,8 +515,11 @@ if ('serviceWorker' in navigator) {
 var wakeLock = null;
 var timerInterval = null;
 var timerStart = null;
+var timerEndSeconds = null;
+var klaarStartSeconds = null;
 var lastBeepSecond = null;
 var audioCtx = null;
+var isFrozen = false;
 
 function parseTime(str) {
   var m = str.replace('~', '').match(/^(\d+):(\d+)/);
@@ -296,9 +527,22 @@ function parseTime(str) {
   return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
 }
 
+function parseEndTime(str) {
+  var matches = str.match(/\d+:\d+/g);
+  if (!matches) return parseTime(str);
+  var last = matches[matches.length - 1].split(':');
+  return parseInt(last[0], 10) * 60 + parseInt(last[1], 10);
+}
+
+function formatClock(sec) {
+  var mm = Math.floor(sec / 60);
+  var ss = sec % 60;
+  return mm + ':' + (ss < 10 ? '0' : '') + ss;
+}
+
 function getTimedSteps(r) {
   return r.steps.map(function (st) {
-    return { label: st[1], vol: st[2], note: st[3], seconds: parseTime(st[0]) };
+    return { label: st[1], ml: parseMl(st[2]), seconds: parseTime(st[0]) };
   });
 }
 
@@ -340,50 +584,80 @@ function beep() {
 }
 
 function startTimer() {
-  var steps = getTimedSteps(recipes[currentRecipeName]);
+  var r = recipes[currentRecipeName];
+  var steps = getTimedSteps(r);
+  var pourSteps = steps.slice(0, steps.length - 1);
+  var totalMl = parseMl(r.water);
+  klaarStartSeconds = steps[steps.length - 1].seconds;
+  timerEndSeconds = parseEndTime(r.steps[r.steps.length - 1][0]);
 
-  document.querySelector('.select-wrap').style.display = 'none';
-  document.getElementById('start-row').style.display = 'none';
-  document.getElementById('recipe-view').style.display = 'none';
-  document.getElementById('timer-view').style.display = 'block';
+  document.getElementById('recipe-select').disabled = true;
+  document.getElementById('stat-row').style.display = 'none';
+  document.getElementById('now-next-row').style.display = 'flex';
+  document.getElementById('start-btn').style.display = 'none';
+  document.getElementById('timer-bar').style.display = 'flex';
 
   requestWakeLock();
+  resetBrewAnimation();
 
+  isFrozen = false;
   lastBeepSecond = null;
   timerStart = Date.now();
-  renderTimer(steps, 0);
+  renderTimer(pourSteps, totalMl, 0);
   timerInterval = setInterval(function () {
-    var elapsed = Math.floor((Date.now() - timerStart) / 1000);
-    renderTimer(steps, elapsed);
-  }, 200);
+    var elapsedMs = Date.now() - timerStart;
+    renderTimer(pourSteps, totalMl, Math.floor(elapsedMs / 1000), elapsedMs / 1000);
+  }, 100);
 }
 
-function renderTimer(steps, elapsed) {
-  var idx = 0;
-  for (var i = 0; i < steps.length; i++) {
-    if (steps[i].seconds <= elapsed) idx = i;
-  }
-  var cur = steps[idx];
-  var next = steps[idx + 1];
+function renderTimer(pourSteps, totalMl, elapsed, preciseElapsed) {
+  if (preciseElapsed === undefined) preciseElapsed = elapsed;
+  var finished = elapsed >= timerEndSeconds;
+  var displayElapsed = finished ? timerEndSeconds : elapsed;
+  var displayPreciseElapsed = finished ? timerEndSeconds : preciseElapsed;
 
-  var mm = Math.floor(elapsed / 60);
-  var ss = elapsed % 60;
-  var remaining = next ? next.seconds - elapsed : null;
-  var isRed = remaining !== null && remaining >= 0 && remaining <= 5;
+  var idx = 0;
+  for (var i = 0; i < pourSteps.length; i++) {
+    if (pourSteps[i].seconds <= displayElapsed) idx = i;
+  }
+  var cur = pourSteps[idx];
+  var next = pourSteps[idx + 1];
+
+  var prevMl = idx > 0 ? pourSteps[idx - 1].ml : 0;
+  var curMl = cur.ml;
+
+  var boundarySeconds = next ? next.seconds : klaarStartSeconds;
+  var remaining = boundarySeconds - displayElapsed;
+  var isRed = remaining >= 0 && remaining <= 5;
+
+  if (!finished && idx !== lastStepIdx) {
+    lastStepIdx = idx;
+    onStepStart(prevMl, curMl, totalMl, cur.seconds, boundarySeconds);
+  }
 
   var clockEl = document.getElementById('timer-clock');
-  clockEl.textContent = mm + ':' + (ss < 10 ? '0' : '') + ss;
+  clockEl.textContent = formatClock(displayElapsed);
   clockEl.classList.toggle('red', isRed);
 
-  document.getElementById('timer-step').textContent = cur.label;
-  document.getElementById('timer-note').textContent = cur.note;
+  var nowRange = prevMl + ' ML → ' + curMl + ' ML';
+  var nowTime = formatClock(cur.seconds) + ' - ' + formatClock(boundarySeconds);
 
-  var nowEl = document.getElementById('timer-now');
-  var nextEl = document.getElementById('timer-next');
-  nowEl.textContent = 'now: ' + cur.vol;
-  nextEl.textContent = 'next: ' + (next ? next.vol : '—');
-  nowEl.classList.toggle('red', isRed);
-  nextEl.classList.toggle('red', isRed);
+  var nextHTML;
+  if (next) {
+    var afterNext = pourSteps[idx + 2] ? pourSteps[idx + 2].seconds : klaarStartSeconds;
+    var nextRange = curMl + ' ML → ' + next.ml + ' ML';
+    var nextTime = formatClock(next.seconds) + ' - ' + formatClock(afterNext);
+    nextHTML = '<div class="nn-value">' + nextRange + '</div><div class="nn-time">' + nextTime + '</div>';
+  } else {
+    nextHTML = '<div class="nn-value nn-done-text">DONE!</div>';
+  }
+
+  document.getElementById('now-next-row').innerHTML =
+    '<div class="nn-cell"><div class="nn-label">Now</div><div class="nn-value">' + nowRange + '</div><div class="nn-time">' + nowTime + '</div></div>' +
+    '<div class="v-div"></div>' +
+    '<div class="nn-cell"><div class="nn-label">Next</div>' + nextHTML + '</div>';
+
+  document.getElementById('water-val').textContent = mlLabel(curMl);
 
   if (isRed && remaining !== lastBeepSecond) {
     lastBeepSecond = remaining;
@@ -391,16 +665,52 @@ function renderTimer(steps, elapsed) {
   } else if (!isRed) {
     lastBeepSecond = null;
   }
+
+  if (finished && timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    releaseWakeLock();
+    clockEl.classList.remove('red');
+    clockEl.classList.add('done');
+    document.getElementById('timer-status').textContent = 'Done!';
+    document.getElementById('timer-status').classList.add('done');
+    setRestingFill();
+  }
 }
 
 function stopTimer() {
-  clearInterval(timerInterval);
-  timerInterval = null;
-  releaseWakeLock();
-  document.querySelector('.select-wrap').style.display = '';
-  document.getElementById('start-row').style.display = '';
-  document.getElementById('recipe-view').style.display = '';
-  document.getElementById('timer-view').style.display = 'none';
+  var clockEl = document.getElementById('timer-clock');
+  var statusEl = document.getElementById('timer-status');
+  var alreadyStopped = clockEl.classList.contains('done') || isFrozen;
+
+  if (!alreadyStopped) {
+    // First tap while actively brewing: freeze right where it is so the
+    // final time (and however far the pour got) stays visible to review.
+    clearInterval(timerInterval);
+    timerInterval = null;
+    releaseWakeLock();
+    isFrozen = true;
+    statusEl.textContent = 'Reset';
+    return;
+  }
+
+  // Second tap (or tapping "Done!"): actually reset back to the home view.
+  isFrozen = false;
+  timerEndSeconds = null;
+  klaarStartSeconds = null;
+  setRestingFill();
+
+  document.getElementById('recipe-select').disabled = false;
+  document.getElementById('stat-row').style.display = 'flex';
+  document.getElementById('now-next-row').style.display = 'none';
+  document.getElementById('start-btn').style.display = 'flex';
+  document.getElementById('timer-bar').style.display = 'none';
+
+  clockEl.classList.remove('red', 'done');
+  statusEl.textContent = 'Stop';
+  statusEl.classList.remove('done');
+
+  setRecipe(currentRecipeName);
 }
 </script>
 
