@@ -514,13 +514,12 @@ function setRecipe(name) {
   currentRecipeName = name;
 
   var pours = r.steps.length - 1;
-  var grindLabel = r.grind.toUpperCase() + ' GRIND';
   var focusLabel = 'FOCUS ON ' + r.focus.toUpperCase();
 
   document.getElementById('stat-row').innerHTML =
-    '<div class="stat-cell">' + formatTemp(r.temp) + ' / ' + pours + ' POURS</div>' +
+    '<div class="stat-cell"><div>' + formatTemp(r.temp) + '</div><div>' + pours + ' POURS</div></div>' +
     '<div class="v-div"></div>' +
-    '<div class="stat-cell">' + grindLabel + '</div>' +
+    '<div class="stat-cell"><div>' + r.grind.toUpperCase() + '</div><div>GRIND</div></div>' +
     '<div class="v-div"></div>' +
     '<div class="stat-cell">' + focusLabel + '</div>';
 
