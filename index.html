@@ -109,24 +109,24 @@
     justify-content: center;
     gap: 16px;
     width: 100%;
-    height: 120px;
+    height: 92px;
     background: #0e0e0e;
     border: 1px solid #8d8d8d;
     border-radius: 8px;
     color: #ffffff;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 40px;
+    font-size: 32px;
     font-weight: 600;
     letter-spacing: 4px;
     cursor: pointer;
   }
   .btn-start:hover { border-color: #aaa; }
-  .btn-start .arrow { font-size: 1.4rem; color: #ffffff; }
+  .btn-start .arrow { font-size: 1.2rem; color: #ffffff; }
 
   .timer-bar {
     display: flex;
     align-items: stretch;
-    height: 120px;
+    height: 92px;
     border: 1px solid #8d8d8d;
     border-radius: 8px;
     overflow: hidden;
@@ -137,7 +137,7 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    font-size: 64px;
+    font-size: 48px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     color: #ffffff;
@@ -474,6 +474,7 @@ function drawGlassPool() {
 
 function drawWater() {
   var now = performance.now();
+  maybeRefitToViewport(now);
 
   if (filterRemaining > 0 && now >= nextDripTime) {
     spawnDripFromFilter();
@@ -746,20 +747,35 @@ function stopTimer() {
 // fits in one screen.
 var wrapEl = document.querySelector('.wrap');
 
+var FIT_SAFETY_MARGIN = 0.97; // a little slack for browser chrome that overlays content without firing resize
+
 function fitToViewport() {
   wrapEl.style.transform = 'none';
   var naturalHeight = wrapEl.scrollHeight;
-  var availableHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  var availableHeight = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * FIT_SAFETY_MARGIN;
   var scale = Math.min(1, availableHeight / naturalHeight);
   wrapEl.style.transform = scale < 1 ? 'scale(' + scale + ')' : 'none';
 }
 
 window.addEventListener('resize', fitToViewport);
 window.addEventListener('orientationchange', fitToViewport);
+window.addEventListener('load', fitToViewport);
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', fitToViewport);
+  window.visualViewport.addEventListener('scroll', fitToViewport);
 }
 fitToViewport();
+
+// Some mobile browser chrome (address bar / bottom toolbar) covers content
+// without firing any resize event at all. Piggyback a cheap periodic
+// recheck on the animation loop that's already running.
+var lastFitCheck = 0;
+function maybeRefitToViewport(now) {
+  if (now - lastFitCheck > 500) {
+    lastFitCheck = now;
+    fitToViewport();
+  }
+}
 </script>
 
 </body>
