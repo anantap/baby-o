@@ -110,6 +110,8 @@
     transition: color 0.15s;
   }
   .timer-clock.red { color: #ff4d4d; }
+  .timer-view.done .timer-clock { color: #4dd68c; }
+  .timer-view.done .timer-step { color: #4dd68c; }
   .timer-step {
     font-size: 0.9rem;
     letter-spacing: 0.1em;
@@ -287,6 +289,7 @@ if ('serviceWorker' in navigator) {
 var wakeLock = null;
 var timerInterval = null;
 var timerStart = null;
+var timerEndSeconds = null;
 var lastBeepSecond = null;
 var audioCtx = null;
 
@@ -294,6 +297,13 @@ function parseTime(str) {
   var m = str.replace('~', '').match(/^(\d+):(\d+)/);
   if (!m) return 0;
   return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+
+function parseEndTime(str) {
+  var matches = str.match(/\d+:\d+/g);
+  if (!matches) return parseTime(str);
+  var last = matches[matches.length - 1].split(':');
+  return parseInt(last[0], 10) * 60 + parseInt(last[1], 10);
 }
 
 function getTimedSteps(r) {
@@ -340,12 +350,15 @@ function beep() {
 }
 
 function startTimer() {
-  var steps = getTimedSteps(recipes[currentRecipeName]);
+  var r = recipes[currentRecipeName];
+  var steps = getTimedSteps(r);
+  timerEndSeconds = parseEndTime(r.steps[r.steps.length - 1][0]);
 
   document.querySelector('.select-wrap').style.display = 'none';
   document.getElementById('start-row').style.display = 'none';
   document.getElementById('recipe-view').style.display = 'none';
   document.getElementById('timer-view').style.display = 'block';
+  document.getElementById('timer-view').classList.remove('done');
 
   requestWakeLock();
 
@@ -359,24 +372,27 @@ function startTimer() {
 }
 
 function renderTimer(steps, elapsed) {
+  var finished = elapsed >= timerEndSeconds;
+  var displayElapsed = finished ? timerEndSeconds : elapsed;
+
   var idx = 0;
   for (var i = 0; i < steps.length; i++) {
-    if (steps[i].seconds <= elapsed) idx = i;
+    if (steps[i].seconds <= displayElapsed) idx = i;
   }
   var cur = steps[idx];
   var next = steps[idx + 1];
 
-  var mm = Math.floor(elapsed / 60);
-  var ss = elapsed % 60;
-  var remaining = next ? next.seconds - elapsed : null;
+  var mm = Math.floor(displayElapsed / 60);
+  var ss = displayElapsed % 60;
+  var remaining = next ? next.seconds - displayElapsed : null;
   var isRed = remaining !== null && remaining >= 0 && remaining <= 5;
 
   var clockEl = document.getElementById('timer-clock');
   clockEl.textContent = mm + ':' + (ss < 10 ? '0' : '') + ss;
   clockEl.classList.toggle('red', isRed);
 
-  document.getElementById('timer-step').textContent = cur.label;
-  document.getElementById('timer-note').textContent = cur.note;
+  document.getElementById('timer-step').textContent = finished ? 'Klaar' : cur.label;
+  document.getElementById('timer-note').textContent = finished ? 'Klaar om te drinken' : cur.note;
 
   var nowEl = document.getElementById('timer-now');
   var nextEl = document.getElementById('timer-next');
@@ -391,16 +407,25 @@ function renderTimer(steps, elapsed) {
   } else if (!isRed) {
     lastBeepSecond = null;
   }
+
+  if (finished && timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    releaseWakeLock();
+    document.getElementById('timer-view').classList.add('done');
+  }
 }
 
 function stopTimer() {
   clearInterval(timerInterval);
   timerInterval = null;
+  timerEndSeconds = null;
   releaseWakeLock();
   document.querySelector('.select-wrap').style.display = '';
   document.getElementById('start-row').style.display = '';
   document.getElementById('recipe-view').style.display = '';
   document.getElementById('timer-view').style.display = 'none';
+  document.getElementById('timer-view').classList.remove('done');
 }
 </script>
 
