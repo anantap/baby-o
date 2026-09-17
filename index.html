@@ -313,40 +313,91 @@ function formatTemp(str) {
   return str.replace('°C', ' °C');
 }
 
-// --- Water pixel fill ---
+// --- Water drip fill ---
 
 var REST_FILL_PCT = 88;
-var PIXEL_SIZE = 9;
-var PIXEL_GAP = 3;
+var DOT_COUNT = 420;
+var DOT_RADIUS = 2.6;
+var DRIP_RADIUS = 3;
+var DRIP_DURATION = 420;
+var DRIP_SPAWN_MS = 200;
 
 var waterCanvas = document.getElementById('water-fill');
 var waterCtx = waterCanvas.getContext('2d');
-var pixelCols = Math.floor(waterCanvas.width / PIXEL_SIZE);
-var pixelRows = Math.floor(waterCanvas.height / PIXEL_SIZE);
-var pixelOrder = buildPixelOrder(pixelCols, pixelRows);
+var dotPositions = buildDotPositions(DOT_COUNT, waterCanvas.width, waterCanvas.height);
+var currentFillPct = 0;
+var drips = [];
+var dripSpawnTimer = null;
 
-function buildPixelOrder(cols, rows) {
-  var cells = [];
-  for (var row = 0; row < rows; row++) {
-    for (var col = 0; col < cols; col++) {
-      cells.push({ row: row, col: col, key: row + Math.random() * 4 });
-    }
+function buildDotPositions(count, width, height) {
+  var dots = [];
+  for (var i = 0; i < count; i++) {
+    var x = Math.random() * width;
+    var y = Math.random() * height;
+    dots.push({ x: x, y: y, r: DOT_RADIUS * (0.7 + Math.random() * 0.6), key: (height - y) + Math.random() * 26 });
   }
-  cells.sort(function (a, b) { return a.key - b.key; });
-  return cells;
+  dots.sort(function (a, b) { return a.key - b.key; });
+  return dots;
 }
 
-function renderWaterFill(pct) {
-  var filledCount = Math.round((pct / 100) * pixelOrder.length);
+function fillSurfaceY(pct) {
+  return waterCanvas.height * (1 - pct / 100);
+}
+
+function setWaterFillPct(pct) {
+  currentFillPct = pct;
+}
+
+function spawnDrip() {
+  drips.push({
+    x: waterCanvas.width * (0.15 + Math.random() * 0.7),
+    startY: -DRIP_RADIUS * 2,
+    targetY: fillSurfaceY(currentFillPct),
+    startTime: performance.now(),
+  });
+}
+
+function startDrips() {
+  if (dripSpawnTimer) return;
+  dripSpawnTimer = setInterval(spawnDrip, DRIP_SPAWN_MS);
+}
+
+function stopDrips() {
+  clearInterval(dripSpawnTimer);
+  dripSpawnTimer = null;
+  drips.length = 0;
+}
+
+function drawWater() {
   waterCtx.clearRect(0, 0, waterCanvas.width, waterCanvas.height);
+
+  var filledCount = Math.round((currentFillPct / 100) * dotPositions.length);
   waterCtx.fillStyle = 'rgba(141, 141, 141, 0.4)';
   for (var i = 0; i < filledCount; i++) {
-    var cell = pixelOrder[i];
-    var x = cell.col * PIXEL_SIZE;
-    var y = waterCanvas.height - (cell.row + 1) * PIXEL_SIZE;
-    waterCtx.fillRect(x, y, PIXEL_SIZE - PIXEL_GAP, PIXEL_SIZE - PIXEL_GAP);
+    var dot = dotPositions[i];
+    waterCtx.beginPath();
+    waterCtx.arc(dot.x, dot.y, dot.r, 0, Math.PI * 2);
+    waterCtx.fill();
   }
+
+  var now = performance.now();
+  waterCtx.fillStyle = 'rgba(200, 200, 200, 0.75)';
+  for (var d = drips.length - 1; d >= 0; d--) {
+    var drip = drips[d];
+    var progress = (now - drip.startTime) / DRIP_DURATION;
+    if (progress >= 1) {
+      drips.splice(d, 1);
+      continue;
+    }
+    var y = drip.startY + (drip.targetY - drip.startY) * progress;
+    waterCtx.beginPath();
+    waterCtx.arc(drip.x, y, DRIP_RADIUS, 0, Math.PI * 2);
+    waterCtx.fill();
+  }
+
+  requestAnimationFrame(drawWater);
 }
+requestAnimationFrame(drawWater);
 
 function setRecipe(name) {
   var r = recipes[name];
@@ -365,7 +416,7 @@ function setRecipe(name) {
 
   document.getElementById('coffee-val').textContent = r.koffie;
   document.getElementById('water-val').textContent = mlLabel(parseMl(r.water));
-  renderWaterFill(REST_FILL_PCT);
+  setWaterFillPct(REST_FILL_PCT);
 }
 
 setRecipe('allround');
@@ -461,6 +512,7 @@ function startTimer() {
   document.getElementById('timer-bar').style.display = 'flex';
 
   requestWakeLock();
+  startDrips();
 
   lastBeepSecond = null;
   timerStart = Date.now();
@@ -497,7 +549,7 @@ function renderTimer(pourSteps, totalMl, elapsed, preciseElapsed) {
   var fillMl = prevMl + (curMl - prevMl) * fillFrac;
   var fillPct = totalMl > 0 ? Math.min(100, Math.max(0, (fillMl / totalMl) * 100)) : 0;
   if (!finished) {
-    renderWaterFill(fillPct);
+    setWaterFillPct(fillPct);
   }
 
   var clockEl = document.getElementById('timer-clock');
@@ -539,7 +591,8 @@ function renderTimer(pourSteps, totalMl, elapsed, preciseElapsed) {
     clockEl.classList.add('done');
     document.getElementById('timer-status').textContent = 'Done!';
     document.getElementById('timer-status').classList.add('done');
-    renderWaterFill(REST_FILL_PCT);
+    stopDrips();
+    setWaterFillPct(REST_FILL_PCT);
   }
 }
 
@@ -549,6 +602,7 @@ function stopTimer() {
   timerEndSeconds = null;
   klaarStartSeconds = null;
   releaseWakeLock();
+  stopDrips();
 
   document.getElementById('recipe-select').disabled = false;
   document.getElementById('stat-row').style.display = 'flex';
