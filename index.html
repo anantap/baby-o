@@ -94,6 +94,7 @@
     height: 221px;
     border: 1px solid #8d8d8d;
     border-top: none;
+    border-radius: 0 0 5px 5px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -373,6 +374,31 @@ function pickLevelDropX(marbles) {
   return Math.max(MIN_X, Math.min(MAX_X, x));
 }
 
+// A drop landing off-balance on a neighbor rolls sideways into the nearest
+// gap rather than balancing exactly where it fell. Hill-climb horizontally
+// from the chosen column toward whichever direction settles lower, so
+// drops actually nestle into the crevices between their neighbors instead
+// of leaving them unfilled.
+function rollToSettle(startX, marbles) {
+  var x = startX;
+  var y = settleY(x, marbles);
+  var step = DOT_RADIUS;
+  for (var iter = 0; iter < 24 && step > 0.15; iter++) {
+    var xLeft = Math.max(MIN_X, x - step);
+    var xRight = Math.min(MAX_X, x + step);
+    var yLeft = settleY(xLeft, marbles);
+    var yRight = settleY(xRight, marbles);
+    if (yLeft > y && yLeft >= yRight) {
+      x = xLeft; y = yLeft;
+    } else if (yRight > y) {
+      x = xRight; y = yRight;
+    } else {
+      step *= 0.6;
+    }
+  }
+  return { x: x, y: y };
+}
+
 // Precompute (once) a level resting pool that reaches MAX_HEIGHT_FRACTION,
 // used both as the total drop budget for a full brew and as the resting
 // (before-start / after-done) view.
@@ -381,10 +407,10 @@ function buildRestingPile() {
   var targetY = GLASS_TOP + GLASS_H * (1 - MAX_HEIGHT_FRACTION);
   var safetyCap = 4000;
   while (marbles.length < safetyCap) {
-    var x = pickLevelDropX(marbles);
-    var y = settleY(x, marbles);
-    marbles.push({ x: x, y: y });
-    if (y <= targetY) break;
+    var coarseX = pickLevelDropX(marbles);
+    var settled = rollToSettle(coarseX, marbles);
+    marbles.push(settled);
+    if (settled.y <= targetY) break;
   }
   return marbles;
 }
@@ -400,7 +426,7 @@ var lastStepIdx = -1;
 var nextDripTime = 0;
 var currentDripInterval = 300;
 
-var POUR_FILL_DURATION = 450; // ms for the filter to visibly fill as the pour happens
+var POUR_FILL_DURATION = 10000; // ms for the filter to visibly fill as the pour happens (a slow, easy pour)
 var pourStartTime = 0;
 var pourFromFrac = 0; // filter level at the moment the pour started (usually 0)
 
@@ -427,7 +453,8 @@ function onStepStart(prevMl, curMl, totalMl, stepStartSec, stepEndSec) {
   filterRemaining += dotsForStep;
   filterStepTotal = filterRemaining;
   var stepDurationMs = Math.max(200, (stepEndSec - stepStartSec) * 1000);
-  currentDripInterval = stepDurationMs / dotsForStep;
+  var drainWindowMs = Math.max(200, stepDurationMs - POUR_FILL_DURATION);
+  currentDripInterval = drainWindowMs / dotsForStep;
   nextDripTime = performance.now() + Math.max(STEP_POUR_DELAY, POUR_FILL_DURATION);
 }
 
@@ -441,11 +468,11 @@ function resetBrewAnimation() {
 
 function spawnDripFromFilter() {
   filterRemaining--;
-  var dropX = pickLevelDropX(settledMarbles);
-  var restY = settleY(dropX, settledMarbles);
+  var coarseX = pickLevelDropX(settledMarbles);
+  var settled = rollToSettle(coarseX, settledMarbles);
   var startY = FILTER_LEVEL_BOTTOM_Y - 10;
-  var duration = Math.max(MIN_FALL_DURATION, (restY - startY) / FALL_SPEED);
-  activeDrips.push({ x: dropX, startY: startY, restY: restY, startTime: performance.now(), duration: duration });
+  var duration = Math.max(MIN_FALL_DURATION, (settled.y - startY) / FALL_SPEED);
+  activeDrips.push({ x: settled.x, startY: startY, restY: settled.y, startTime: performance.now(), duration: duration });
 }
 
 // The filter shown as a solid pool (not individual drops) that shrinks
