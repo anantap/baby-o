@@ -86,6 +86,40 @@
   .note { color: #666; }
   .footer { margin-top: 2rem; font-size: 0.6rem; letter-spacing: 0.1em; color: #555; text-transform: uppercase; line-height: 1.8; }
   .footer span { color: #999; }
+  .btn {
+    appearance: none;
+    background: #0e0e0e;
+    border: 1px solid #2a2a2a;
+    color: #e0e0e0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.6rem 1.2rem;
+    cursor: pointer;
+  }
+  .btn:hover { border-color: #444; }
+  .start-row { margin-bottom: 1.8rem; }
+  .timer-view { display: none; }
+  .timer-clock {
+    font-size: 3.5rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: #e0e0e0;
+    margin-bottom: 0.5rem;
+    transition: color 0.15s;
+  }
+  .timer-clock.red { color: #ff4d4d; }
+  .timer-step {
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 1.8rem;
+  }
+  .timer-volumes { display: flex; gap: 2rem; margin-bottom: 1.5rem; }
+  .timer-volumes .stat-val.red { color: #ff4d4d; }
+  .timer-note { font-size: 0.8rem; color: #888; margin-bottom: 2rem; min-height: 1.2em; }
 </style>
 </head>
 <body>
@@ -102,19 +136,37 @@
   </div>
   <div class="title" id="title"></div>
   <div class="stats" id="stats"></div>
-  <div class="sub-label">Stappenplan</div>
-  <table>
-    <thead>
-      <tr>
-        <th>Tijd</th>
-        <th>Stap</th>
-        <th>Tot</th>
-        <th>Notitie</th>
-      </tr>
-    </thead>
-    <tbody id="steps"></tbody>
-  </table>
-  <div class="footer" id="footer"></div>
+
+  <div class="start-row" id="start-row">
+    <button class="btn" id="start-btn" onclick="startTimer()">&#9654; Start</button>
+  </div>
+
+  <div id="recipe-view">
+    <div class="sub-label">Stappenplan</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Tijd</th>
+          <th>Stap</th>
+          <th>Tot</th>
+          <th>Notitie</th>
+        </tr>
+      </thead>
+      <tbody id="steps"></tbody>
+    </table>
+    <div class="footer" id="footer"></div>
+  </div>
+
+  <div class="timer-view" id="timer-view">
+    <div class="timer-clock" id="timer-clock">0:00</div>
+    <div class="timer-step" id="timer-step"></div>
+    <div class="timer-volumes">
+      <div class="stat-item"><span class="stat-key">Now</span><span class="stat-val" id="timer-now"></span></div>
+      <div class="stat-item"><span class="stat-key">Next</span><span class="stat-val" id="timer-next"></span></div>
+    </div>
+    <div class="timer-note" id="timer-note"></div>
+    <button class="btn" id="stop-btn" onclick="stopTimer()">&#9632; Stop</button>
+  </div>
 </div>
 <script>
 var recipes = {
@@ -197,9 +249,12 @@ var recipes = {
   }
 };
 
+var currentRecipeName = 'allround';
+
 function setRecipe(name) {
 var r = recipes[name];
 if (!r) return;
+currentRecipeName = name;
 document.getElementById('title').textContent = 'Orea O1 · Hario Mini Slim · ' + r.name + ' · Kalita Wave 155';
 var statsHTML = '';
 var statsData = [
@@ -225,6 +280,127 @@ setRecipe('allround');
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/service-worker.js');
+}
+
+// --- Timer ---
+
+var wakeLock = null;
+var timerInterval = null;
+var timerStart = null;
+var lastBeepSecond = null;
+var audioCtx = null;
+
+function parseTime(str) {
+  var m = str.replace('~', '').match(/^(\d+):(\d+)/);
+  if (!m) return 0;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+
+function getTimedSteps(r) {
+  return r.steps.map(function (st) {
+    return { label: st[1], vol: st[2], note: st[3], seconds: parseTime(st[0]) };
+  });
+}
+
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (e) {}
+}
+
+function releaseWakeLock() {
+  if (wakeLock) {
+    wakeLock.release().catch(function () {});
+    wakeLock = null;
+  }
+}
+
+document.addEventListener('visibilitychange', function () {
+  if (timerInterval && document.visibilityState === 'visible') {
+    requestWakeLock();
+  }
+});
+
+function beep() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch (e) {}
+}
+
+function startTimer() {
+  var steps = getTimedSteps(recipes[currentRecipeName]);
+
+  document.querySelector('.select-wrap').style.display = 'none';
+  document.getElementById('start-row').style.display = 'none';
+  document.getElementById('recipe-view').style.display = 'none';
+  document.getElementById('timer-view').style.display = 'block';
+
+  requestWakeLock();
+
+  lastBeepSecond = null;
+  timerStart = Date.now();
+  renderTimer(steps, 0);
+  timerInterval = setInterval(function () {
+    var elapsed = Math.floor((Date.now() - timerStart) / 1000);
+    renderTimer(steps, elapsed);
+  }, 200);
+}
+
+function renderTimer(steps, elapsed) {
+  var idx = 0;
+  for (var i = 0; i < steps.length; i++) {
+    if (steps[i].seconds <= elapsed) idx = i;
+  }
+  var cur = steps[idx];
+  var next = steps[idx + 1];
+
+  var mm = Math.floor(elapsed / 60);
+  var ss = elapsed % 60;
+  var remaining = next ? next.seconds - elapsed : null;
+  var isRed = remaining !== null && remaining >= 0 && remaining <= 5;
+
+  var clockEl = document.getElementById('timer-clock');
+  clockEl.textContent = mm + ':' + (ss < 10 ? '0' : '') + ss;
+  clockEl.classList.toggle('red', isRed);
+
+  document.getElementById('timer-step').textContent = cur.label;
+  document.getElementById('timer-note').textContent = cur.note;
+
+  var nowEl = document.getElementById('timer-now');
+  var nextEl = document.getElementById('timer-next');
+  nowEl.textContent = 'now: ' + cur.vol;
+  nextEl.textContent = 'next: ' + (next ? next.vol : '—');
+  nowEl.classList.toggle('red', isRed);
+  nextEl.classList.toggle('red', isRed);
+
+  if (isRed && remaining !== lastBeepSecond) {
+    lastBeepSecond = remaining;
+    beep();
+  } else if (!isRed) {
+    lastBeepSecond = null;
+  }
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  releaseWakeLock();
+  document.querySelector('.select-wrap').style.display = '';
+  document.getElementById('start-row').style.display = '';
+  document.getElementById('recipe-view').style.display = '';
+  document.getElementById('timer-view').style.display = 'none';
 }
 </script>
 
